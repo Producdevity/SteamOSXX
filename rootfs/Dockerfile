@@ -57,7 +57,7 @@ COPY secrets/authorized_keys /root/.ssh/authorized_keys
 COPY secrets/authorized_keys /home/steam/.ssh/authorized_keys
 COPY secrets/nm/ /etc/NetworkManager/system-connections/
 RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.ssh \
- && chmod 600 /etc/NetworkManager/system-connections/* \
+ && find /etc/NetworkManager/system-connections -type f -exec chmod 600 {} + \
  && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \

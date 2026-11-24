@@ -1,0 +1,65 @@
+name: build
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  uboot:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash uboot/build.sh card
+      - run: bash uboot/build.sh fel-boot
+      - run: bash uboot/build.sh fel-reset
+      - uses: actions/upload-artifact@v4
+        with: {name: uboot, path: out/uboot/*.bin}
+
+  rootfs:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: ROCKNIX kernel, modules and firmware
+        run: bash tools/fetch-rocknix.sh
+      # Release builds carry no SSH key or Wi-Fi profile: adb over USB until the user adds them.
+      - run: mkdir -p secrets/nm && touch secrets/authorized_keys
+      - run: bash tools/build-rootfs.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rootfs
+          path: |
+            out/rootfs.tar
+            cache/boot/KERNEL
+            cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb
+          retention-days: 3
+          compression-level: 0
+
+  image:
+    needs: [uboot, rootfs]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: uboot, path: out/uboot}
+      - uses: actions/download-artifact@v4
+        with: {name: rootfs, path: .}
+      - run: bash tools/build-image.sh
+      - run: xz -T0 -6 out/steamos-rg40xx.img && sha256sum out/steamos-rg40xx.img.xz | tee out/steamos-rg40xx.img.xz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: |
+            out/steamos-rg40xx.img.xz
+            out/steamos-rg40xx.img.xz.sha256
+            out/uboot/*.bin
+      - if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            out/steamos-rg40xx.img.xz
+            out/steamos-rg40xx.img.xz.sha256
+            out/uboot/fel-boot.bin
+            out/uboot/fel-reset.bin
