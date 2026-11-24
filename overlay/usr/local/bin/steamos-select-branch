@@ -1,0 +1,4 @@
+#!/bin/bash
+# Steam (-steamos3) OS branch hook: no OS branches.
+case "${1:-}" in -l) echo stable ;; -c) echo stable ;; esac
+exit 0

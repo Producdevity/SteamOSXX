@@ -21,6 +21,14 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
 fi
 ui=()
 [ "${STEAM_UI:-gamepadui}" = gamepadui ] && ui=(-gamepadui)
+# STEAMOS=1: SteamOS client mode (system settings, power menu); needs the steamos-* helpers on PATH.
+if [ "${STEAMOS:-0}" = 1 ]; then
+  ui=(-gamepadui -steamos3 -steampal -steamdeck)
+  export STEAMOS_STEAM_REBOOT_SENTINEL=/tmp/steamos-reboot-sentinel
+  export STEAMOS_STEAM_SHUTDOWN_SENTINEL=/tmp/steamos-shutdown-sentinel
+  export STEAM_ENABLE_VOLUME_HANDLER=1
+  rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL" "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"
+fi
 cef=(-cef-disable-gpu -cef-disable-gpu-compositing)
 [ "${CEF_GPU:-0}" = 1 ] && cef=()
 cd "$root"
@@ -33,4 +41,10 @@ while :; do
   echo "== $(date -u +%FT%TZ) steam exited rc=$rc" >>"$log"
   [ "$rc" = 42 ] || break
 done
+# Steam's power menu leaves a sentinel and exits; in dev mode poweroff is linked to reboot.
+if [ -e "${STEAMOS_STEAM_REBOOT_SENTINEL:-/nonexistent}" ]; then
+  rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL"; echo "== reboot requested by Steam" >>"$log"; systemctl reboot
+elif [ -e "${STEAMOS_STEAM_SHUTDOWN_SENTINEL:-/nonexistent}" ]; then
+  rm -f "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"; echo "== shutdown requested by Steam" >>"$log"; systemctl poweroff
+fi
 exit $rc

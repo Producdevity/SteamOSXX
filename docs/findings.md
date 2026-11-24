@@ -73,3 +73,13 @@ change how we work also go into `lessons-learned.md`.
   stub in its u-boot package; that build has to be reproduced with our defconfig before testing.
 - Test only with an RTC wake alarm (`rtcwake -m mem -s 20`) and the recovery loop in place: a hang during
   suspend is the one state the watchdog does not cover.
+
+### SteamOS client mode (from ChimeraOS gamescope-session-steam, MIT)
+- SteamOS UI features (system settings, power menu, OS update page) need
+  `steam -gamepadui -steamos3 -steampal -steamdeck` plus helper commands on PATH: `steamos-session-select`
+  (switch session), `steamos-update` (exit 7 = no update; `--supports-duplicate-detection` exits 0),
+  `steamos-select-branch`, `jupiter-biosupdate` (exit 0). Stubs are in `overlay/usr/local/bin`.
+- Power menu: Steam touches `$STEAMOS_STEAM_REBOOT_SENTINEL` / `$STEAMOS_STEAM_SHUTDOWN_SENTINEL` and exits;
+  the session script then reboots or powers off. `STEAM_ENABLE_VOLUME_HANDLER=1` lets Steam handle the
+  volume keys itself. The gamescope-specific variables (VRR, HDR, NIS, mangoapp) do not apply without gamescope.
+- `upower` provides the battery to Steam (`battery_battery` and `line_power_axp20x_usb` on this device).

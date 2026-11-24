@@ -1,0 +1,3 @@
+#!/bin/bash
+# Steam (-steamos3) BIOS update hook: nothing to update on this device.
+exit 0

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Steam (-steamos3) calls this to switch sessions; there is only the Steam session, so restart it.
+# Interface from ChimeraOS gamescope-session-steam (MIT).
+"$HOME/.local/share/Steam/steamrtarm64/steam" -shutdown >/dev/null 2>&1 || true
