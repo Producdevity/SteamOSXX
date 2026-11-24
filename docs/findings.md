@@ -172,3 +172,13 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - DXVK stays the default (faster and correct). The real limits are CPU-side: FEX translation and software
   Vulkan. Levers: web helper priority during games, FEX TSO settings, ARMv8.0 Proton/FEX builds (no LSE traps),
   PanVK on the GPU.
+
+### Steam UI on the GPU (`CEF_GPU=1`): works, not stable (reverted)
+- Chromium renders through ANGLE on Panfrost (`ANGLE (Mesa, Mali-G31 (Panfrost), OpenGL 3.1)`, GLES 2.0 over
+  GL 3.1); gpu_compositing, rasterization, opengl and webgl all enabled; the UI renders correctly. `gbm` logs
+  "Failed to export buffer to dma_buf" (display and GPU are separate DRM devices) but it still draws.
+- Within a few minutes the GPU process exited (code 512) and the whole client then exited (session restarted).
+  The kernel showed `panfrost_gem_shrinker_scan` under memory pressure: GPU buffers come out of the same 1 GB.
+- `sxx-uibench` (12 pad moves over ~15 s): software 156-161 % web helper CPU; GPU 113-191 % (noisy).
+  No clear CPU win to justify the instability. Back to `CEF_GPU=0`; revisit with more free RAM (game mode,
+  fewer web helper processes).
