@@ -106,3 +106,17 @@ change how we work also go into `lessons-learned.md`.
   `jupiter-initial-firmware-update check`, `gpu-trace --get-tracing-status`,
   `/usr/bin/steamos-polkit-helpers/steamos-devkit-mode --disable` and probes for a mangoapp window; stubs are in
   the overlay.
+
+### Automation (no hands on the device)
+- `sxx` (on the device, stdlib Python; DevTools client adapted from DroidDeck's droiddeck-agent):
+  `sxx targets`, `sxx eval [-t TARGET] JS`, `sxx pad TOKENS` (virtual "SteamOSXX Test Pad", uinput,
+  pid.codes 1209:5a5a, standard evdev codes; Steam maps it like the built-in pad).
+- Steam DevTools: `-cef-enable-debugging -devtools-port 8080` (from `CDP_PORT`), bound to 127.0.0.1 only.
+  Targets in Big Picture: `SharedJSContext` (route, e.g. `/routes/library/home`), `Steam Big Picture Mode`
+  (the window: `document.activeElement` is the focused item), `MainMenu_uid2`, `QuickAccess_uid2`,
+  `notificationtoasts_uid2`. The Big Picture window asks for `minwidth=853&minheight=534`; the panel is
+  640x480.
+- `tools/smoke.sh` checks reachability, services, display, GPU, Wi-Fi, audio sink, battery, gamepad
+  (and that X ignores it), the Steam route, pad navigation (focus must move) and memory, and saves a
+  screenshot.
+- The X cursor showed at boot; SteamOS/gamescope never show one. Xorg now runs with `-nocursor`.

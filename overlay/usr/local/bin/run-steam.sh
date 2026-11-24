@@ -31,6 +31,7 @@ if [ "${STEAMOS:-0}" = 1 ]; then
 fi
 cef=(-cef-disable-gpu -cef-disable-gpu-compositing)
 [ "${CEF_GPU:-0}" = 1 ] && cef=()
+[ -n "${CDP_PORT:-}" ] && cef+=(-cef-enable-debugging -devtools-port "$CDP_PORT")
 cd "$root"
 while :; do
   /usr/local/bin/patch-webhelper.py >>"$log" 2>&1
