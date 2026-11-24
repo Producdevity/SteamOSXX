@@ -93,6 +93,11 @@ the RAM settings or the recovery path.
 - Keep `cache/` (4 GB of ROCKNIX images and the Steam tarball) out of the Docker build context
   (`.dockerignore`).
 
+- Python's text mode on Windows writes CRLF (`open(p, "w")`), and so do some editors; a CRLF
+  `#!/bin/sh` script or fstab line in the image fails at boot. `.gitattributes` keeps the repository LF, but
+  Docker copies the working tree, so `tools/build-rootfs.sh` refuses to build when any file has a CR. Write
+  with `open(p, "w", newline="")`.
+
 ## muOS-side lessons (from the chroot project, steam-rg40xx)
 
 - muOS's 4.9 kernel has no SysV IPC (`semget` fails, Steam's tier0 asserts), no user namespaces, no DRM.
