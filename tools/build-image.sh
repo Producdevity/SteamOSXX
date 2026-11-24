@@ -7,8 +7,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 if [ ! -f /.dockerenv ]; then
   exec env MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 -v "$(pwd -W 2>/dev/null || pwd):/w" -w /w \
-    debian:trixie bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >/dev/null;
-      apt-get install -y -qq e2fsprogs dosfstools mtools fdisk >/dev/null 2>&1; tools/build-image.sh'
+    debian:trixie bash -c 'export DEBIAN_FRONTEND=noninteractive; dpkg --add-architecture arm64; apt-get update -qq >/dev/null;
+      apt-get install -y -qq e2fsprogs dosfstools mtools fdisk cpio >/dev/null 2>&1; tools/build-image.sh'
 fi
 
 DTB=${DTB:-sun50i-h700-anbernic-rg40xx-h.dtb}
@@ -29,13 +29,21 @@ fi
 echo "== boot partition"
 cp cache/boot/KERNEL $work/boot/KERNEL
 cp cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb $work/boot/dtbs/
+# Logging initramfs: writes bootlog-N.txt to this partition, then switches to the real root.
+# (rdinit=/no-initramfs, which skips ROCKNIX's built-in initramfs, reset the board; this boots.)
+(cd /tmp && apt-get download -qq busybox-static:arm64 >/dev/null 2>&1 && dpkg-deb -x busybox-static_*.deb bb)
+ir=/tmp/ir && rm -rf $ir && mkdir -p $ir/bin $ir/dev $ir/proc $ir/sys $ir/mnt
+cp /tmp/bb/usr/bin/busybox $ir/bin/busybox
+sed 's/\r$//' debug/initramfs/init > $ir/init && chmod 755 $ir/init $ir/bin/busybox
+(cd $ir && find . | cpio -o -H newc --quiet | gzip -9) > $work/boot/initrd.cpio.gz
 cat > $work/boot/extlinux/extlinux.conf <<EOF
 TIMEOUT 1
 DEFAULT steamos
 LABEL steamos
   LINUX /KERNEL
+  INITRD /initrd.cpio.gz
   FDT /dtbs/$DTB
-  APPEND root=PARTUUID=53544d52-02 rootwait rw rdinit=/no-initramfs init=/lib/systemd/systemd console=ttyS0,115200 console=tty0 panic=10 loglevel=4 fsck.repair=yes
+  APPEND root=PARTUUID=53544d52-02 rootwait rw init=/lib/systemd/systemd console=ttyS0,115200 console=tty0 panic=10 oops=panic softlockup_panic=1 loglevel=4 fsck.repair=yes
 EOF
 boot_mb=256
 truncate -s ${boot_mb}M $work/boot.img

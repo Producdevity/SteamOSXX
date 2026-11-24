@@ -4,7 +4,7 @@ FROM debian:trixie
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session libpam-systemd kmod sudo \
+    systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session dbus-x11 iproute2 libpam-systemd kmod sudo \
     openssh-server adbd network-manager wpasupplicant iw wireless-regdb rfkill \
     systemd-zram-generator cloud-guest-utils e2fsprogs dosfstools fdisk \
     ca-certificates curl unzip xz-utils file procps psmisc strace gdb binutils less nano lsof pciutils \
@@ -53,9 +53,12 @@ COPY secrets/authorized_keys /home/steam/.ssh/authorized_keys
 COPY secrets/nm/ /etc/NetworkManager/system-connections/
 RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.ssh \
  && chmod 600 /etc/NetworkManager/system-connections/* \
+ && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service \
+ && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
+ && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
  && systemctl set-default multi-user.target \
  && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \
  && depmod 7.2.0 && udevadm hwdb --update

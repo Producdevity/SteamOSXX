@@ -104,3 +104,30 @@ the RAM settings or the recovery path.
 - `pkill -f PATTERN` over `adb shell` matches the adb shell's own command line; put such commands in a
   script on the device.
 - muOS's adbd has no `exec-out`; tar to a file on the device and `adb pull` it.
+
+## Staying reachable: the recovery playbook (verified 2026-11-24)
+
+Layout: muOS in slot 1 (the boot ROM's device, known-good, adb), our OS in slot 2, booted through FEL.
+`tools/rescue.sh` finds the device in any of these states and gets a shell back; `tools/fel-boot.sh`
+boots our OS again. A full round trip (our OS reboot -> muOS -> FEL -> reset -> muOS -> FEL -> our OS)
+took 131 s with nobody touching the device.
+
+| Failure | What brings it back |
+|---|---|
+| our OS hangs (kernel or PID 1) | sunxi hardware watchdog, `RuntimeWatchdogSec=30s` -> reset -> muOS |
+| kernel panic / oops / soft lockup | `panic=10 oops=panic softlockup_panic=1` -> reboot -> muOS |
+| our OS alive but neither adb nor SSH serving | `reach-guard.service` reboots after 5 min -> muOS |
+| anything asks our OS to power off | dev mode: `poweroff.target`/`halt.target` link to `reboot.target`, logind ignores the power key (`tools/devmode.sh`) |
+| slot-2 card does not boot | `fel-boot.bin` resets instead of waiting -> muOS, which can rewrite `/dev/mmcblk1` |
+| device stuck in FEL | `sunxi-fel uboot out/uboot/fel-reset.bin` (bootcmd `reset`) -> muOS |
+| muOS itself | idle sleep is off (`settings/power/idle_sleep = 0`); it only suspends on a power-key press |
+
+Still needs a person: a SoC hung while USB keeps it powered and the watchdog is not running (before the
+kernel arms it, or during suspend). So: never probe DRAM over FEL before an SPL, and only test suspend
+with an RTC wake alarm (`rtcwake`).
+
+Reaching it: adb (our OS serial `33806c00e4f7909a`, muOS `0c001080c69249221d2`), `ssh root@rg40xx.local`
+with `secrets/id_ed25519`, screenshots with `tools/dev.sh shot` (X root window via xwd).
+
+Logs from a boot that failed: the initramfs writes `bootlog-N.txt` to the slot-2 FAT (muOS mounts it at
+`/mnt/sdcard`); later boots keep the systemd journal (`journalctl -b -1`).

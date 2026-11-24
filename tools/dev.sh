@@ -12,7 +12,7 @@ HOST=${DEV_HOST:-rg40xx.local}
 SSH=(ssh -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5)
 
 adb_serial() {
-  adb devices -l | awk '/ device / && /RG40XX|product:|model:/ {print $1}' | while read -r s; do
+  adb devices | awk '$2 == "device" && $1 !~ /tls/ {print $1}' | while read -r s; do
     [ "$(adb -s "$s" shell cat /etc/hostname 2>/dev/null | tr -d '\r')" = rg40xx ] && { echo "$s"; break; }
   done
 }
@@ -31,10 +31,14 @@ case "${1:-status}" in
   ssh) shift; "${SSH[@]}" "root@$HOST" "$@" ;;
   shot)
     out=${2:-out/shot.png}
-    run 'DISPLAY=:0 XAUTHORITY= xwd -root -silent | base64 -w0' | python -c "
-import sys, base64, struct
+    run 'DISPLAY=:0 XAUTHORITY= xwd -root -silent > /tmp/root.xwd'
+    s=$(adb_serial)
+    if [ -n "$s" ]; then adb -s "$s" pull /tmp/root.xwd out/root.xwd >/dev/null
+    else scp -q -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$HOST:/tmp/root.xwd" out/root.xwd; fi
+    python -c "
+import sys, struct
 from PIL import Image
-d = base64.b64decode(sys.stdin.read())
+d = open('out/root.xwd', 'rb').read()
 hs, = struct.unpack('>I', d[0:4]); w, h = struct.unpack('>II', d[16:24]); bpl, = struct.unpack('>I', d[48:52])
 ncolors, = struct.unpack('>I', d[76:80])
 px = d[hs + ncolors * 12:]

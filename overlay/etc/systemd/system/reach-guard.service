@@ -1,0 +1,10 @@
+[Unit]
+Description=Reboot when the device has no adb or SSH reachability for 5 minutes
+After=usb-gadget.service ssh.service
+
+[Service]
+ExecStart=/usr/local/sbin/reach-guard
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
