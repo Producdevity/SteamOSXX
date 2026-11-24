@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session dbus-x11 iproute2 kbd libpam-systemd kmod sudo \
-    openssh-server adbd network-manager wpasupplicant iw wireless-regdb rfkill \
+    openssh-server openssh-client earlyoom adbd network-manager wpasupplicant iw wireless-regdb rfkill \
     systemd-zram-generator cloud-guest-utils e2fsprogs dosfstools fdisk \
     ca-certificates curl unzip xz-utils file procps psmisc strace gdb binutils less nano lsof pciutils \
     usbutils evtest htop python3 gcc libc6-dev libx11-dev \
@@ -36,6 +36,10 @@ RUN mkdir -p /usr/local/lib/lse && gcc -shared -fPIC -O2 -march=armv8-a -mno-out
  && cp /usr/local/lib/lse/liblse_emu.so /usr/local/lib/lse/liblse_emu_sys.so
 COPY rootfs/src/padmap.c /usr/local/src/padmap.c
 RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
+COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
+RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+COPY rootfs/src/reach-guard.c /usr/local/src/reach-guard.c
+RUN mkdir -p /usr/local/sbin && gcc -O2 -Wall -o /usr/local/sbin/reach-guard /usr/local/src/reach-guard.c
 
 # ROCKNIX kernel 7.2.0 modules (joypad, zram, ...) and Wi-Fi/BT firmware.
 COPY cache/overlay/usr/lib/kernel-overlays/base/lib/modules/ /usr/lib/modules/
@@ -57,7 +61,7 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
  && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service handheld-keys.service sxx-vpad.service game-mode.service \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-vpad.service game-mode.service \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
  && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \

@@ -182,3 +182,29 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - `sxx-uibench` (12 pad moves over ~15 s): software 156-161 % web helper CPU; GPU 113-191 % (noisy).
   No clear CPU win to justify the instability. Back to `CEF_GPU=0`; revisit with more free RAM (game mode,
   fewer web helper processes).
+
+### Memory livelock: the one strand the recovery loop did not cover (2026-11-24)
+- Launching Geometry Wars on the ARMv8.0 Proton 11.0-3 build with Big Picture still up filled zram and the
+  device livelocked: ping answered (kernel networking), adb went `offline`, sshd stopped sending its banner,
+  and the kernel OOM killer never fired. PID 1 kept feeding the hardware watchdog and the shell `reach-guard`
+  saw adbd "running" and :22 "listening", so nothing rebooted. 12 parallel pre-auth SSH connections (to add
+  pressure and force an OOM kill) did not break it either.
+- Fixes, all in the image:
+  - `earlyoom` (`/etc/default/earlyoom`): kills at <6 % RAM and <15 % swap free, preferring Wine/FEX/game
+    processes and never the session, Steam client, Xorg or access services.
+  - MGLRU thrash protection: `/sys/kernel/mm/lru_gen/min_ttl_ms = 1000` (tmpfiles.d) makes the kernel OOM
+    kill instead of evicting a working set younger than 1 s (`CONFIG_LRU_GEN_ENABLED=y` in the ROCKNIX kernel).
+  - `reach-guard` is now C, `mlockall()`ed, probes sshd with a real banner read on 127.0.0.1:22 and calls
+    `reboot(2)` itself after 4 minutes: a shell script or `systemctl` would need paging in and stall too.
+  - `MemoryMin=24M` + `OOMScoreAdjust=-900` for ssh, usb-gadget (adbd), reach-guard and earlyoom.
+  - 2 GB `/swapfile` at priority -2 behind zram (priority 100), like SteamOS's swapfile.
+
+### Game windows under Big Picture: gamescope's focus protocol
+- With `-steamos3` Steam believes it runs under gamescope: it writes `GAMESCOPECTRL_BASELAYER_APPID` on the
+  root window (seen: `413091, 769`; 769 is Steam itself) and never raises game windows on a plain X server, so
+  a launched game stays hidden behind Big Picture.
+- Steam's own windows carry `STEAM_GAME=769`; Proton game windows had no `STEAM_GAME`, only
+  `WM_CLASS steam_app_8400`.
+- `sxx-focus` plays gamescope's side: tags game windows with `STEAM_GAME` (from `steam_app_N` or the
+  process's `SteamGameId`), publishes `GAMESCOPE_FOCUSABLE_APPS/_WINDOWS` and `GAMESCOPE_FOCUSED_APP/_WINDOW`,
+  and activates the window of the first base-layer app through openbox (`_NET_ACTIVE_WINDOW`, pager source).

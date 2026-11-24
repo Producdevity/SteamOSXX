@@ -1,0 +1,3 @@
+# Kill before zram fills and the system thrashes (sshd and adbd stop answering long before the kernel OOM
+# killer acts). Games and Wine go first; the session, Steam and the access services are never picked.
+EARLYOOM_ARGS="-m 6 -s 15 -r 0 -n --prefer ^(wine.*|.*\.exe|GeometryWars.*|FEX.*|pv-adverb|steam-runtime.*)$ --avoid ^(Xorg|systemd.*|sshd|adbd|reach-guard|earlyoom|dbus-daemon|NetworkManager|wpa_supplicant|steam|pipewire.*|wireplumber)$"

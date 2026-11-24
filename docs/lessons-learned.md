@@ -116,11 +116,15 @@ took 131 s with nobody touching the device.
 |---|---|
 | our OS hangs (kernel or PID 1) | sunxi hardware watchdog, `RuntimeWatchdogSec=30s` -> reset -> muOS |
 | kernel panic / oops / soft lockup | `panic=10 oops=panic softlockup_panic=1` -> reboot -> muOS |
-| our OS alive but neither adb nor SSH serving | `reach-guard.service` reboots after 5 min -> muOS |
+| our OS alive but neither adb nor SSH serving | `reach-guard` (C, memory-locked, real sshd banner probe) calls `reboot(2)` after 4 min -> muOS |
+| memory thrash (zram full, userspace livelocked, kernel still answers ping) | `earlyoom`, MGLRU `min_ttl_ms`, swapfile behind zram; `reach-guard` as the backstop |
 | anything asks our OS to power off | dev mode: `poweroff.target`/`halt.target` link to `reboot.target`, logind ignores the power key (`tools/devmode.sh`) |
 | slot-2 card does not boot | `fel-boot.bin` resets instead of waiting -> muOS, which can rewrite `/dev/mmcblk1` |
 | device stuck in FEL | `sunxi-fel uboot out/uboot/fel-reset.bin` (bootcmd `reset`) -> muOS |
 | muOS itself | idle sleep is off (`settings/power/idle_sleep = 0`); it only suspends on a power-key press |
+
+A thrash livelock is invisible to the watchdog (PID 1 still runs) and to process/port checks (adbd
+"running", :22 "listening"): only a probe that needs an answer catches it.
 
 Still needs a person: a SoC hung while USB keeps it powered and the watchdog is not running (before the
 kernel arms it, or during suspend). So: never probe DRAM over FEL before an SPL, and only test suspend

@@ -1,2 +1,4 @@
 PARTUUID=53544d52-02  /              ext4  defaults,noatime,commit=30  0 1
 PARTUUID=53544d52-01  /boot/firmware vfat  defaults,noatime,umask=022  0 2
+# Behind zram (priority 100): headroom for games instead of a thrash livelock, as SteamOS keeps a swapfile.
+/swapfile             none           swap  defaults,pri=-2,nofail  0 0
