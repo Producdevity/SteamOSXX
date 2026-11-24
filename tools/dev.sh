@@ -31,7 +31,7 @@ case "${1:-status}" in
   ssh) shift; "${SSH[@]}" "root@$HOST" "$@" ;;
   shot)
     out=${2:-out/shot.png}
-    run 'DISPLAY=:0 XAUTHORITY= xwd -root -silent > /tmp/root.xwd'
+    run 'runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority xwd -root -silent > /tmp/root.xwd'
     s=$(adb_serial)
     if [ -n "$s" ]; then adb -s "$s" pull /tmp/root.xwd out/root.xwd >/dev/null
     else scp -q -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$HOST:/tmp/root.xwd" out/root.xwd; fi

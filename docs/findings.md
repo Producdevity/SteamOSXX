@@ -55,3 +55,10 @@ change how we work also go into `lessons-learned.md`.
   (copy_image is broken/slow on G31 for some apps).
 - Wi-Fi probe retry for RTL8821CS (`sdio:*v024CdC821*`), like our `wifi-kick`.
 - Audio latency default 64 (RetroArch setting).
+- Steam's bootstrapper re-downloads the whole package (~580 MB) when the cached zips in
+  `Steam/package/` are missing ("Package file ... missing or incorrect size"), even with a valid
+  `.installed` manifest. Seeding a Steam install from another device must include `package/*.zip*`.
+- With the logind session, Xorg runs as `steam` with an auth cookie; root needs
+  `runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority xwd -root` for screenshots.
+- Volume keys (`gpio-keys-volume`) and menu+volume (backlight) handled by `handheld-keys.service`
+  (backlight max 2499 on this panel).

@@ -1,4 +1,6 @@
-# SteamOS-style Linux for the Anbernic RG40XX-H
+# SteamOSXX
+
+SteamOS-style Linux for the Anbernic RG40XX-H (and, in time, other H700 handhelds).
 
 Valve's native **arm64 Steam client in Big Picture mode** on a $70 handheld: Anbernic RG40XX-H, Allwinner
 H700 (4x Cortex-A53, Mali-G31, 1 GB RAM, 640x480). A flashable SD-card OS built from a mainline kernel and a
