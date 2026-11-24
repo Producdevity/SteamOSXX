@@ -91,3 +91,9 @@ change how we work also go into `lessons-learned.md`.
 - Big Picture shows battery and Wi-Fi in the status bar (upower, NetworkManager) and controller glyphs
   (the built-in pad is recognised with no remapping).
 - Time zone was UTC; set to America/New_York (also in the image).
+- adbd (Debian 34.0.5) does not recover its FunctionFS connection after a USB unplug/replug (adb shows
+  `offline` until the gadget restarts). `90-usb-gadget-replug.rules` restarts `usb-gadget.service` when
+  `axp20x-usb` reports power again. SSH over Wi-Fi was the way back in.
+- On-screen keyboard in plain `-gamepadui`: A shows a mouse cursor in the screen centre and clicks there,
+  which dismisses the keyboard; focus never leaves the Big Picture window and no new X window appears (the
+  keyboard is drawn inside it). Trying SteamOS client mode (`-steamos3 -steampal -steamdeck`).
