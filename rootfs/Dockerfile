@@ -4,7 +4,7 @@ FROM debian:trixie
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session dbus-x11 iproute2 libpam-systemd kmod sudo \
+    systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session dbus-x11 iproute2 kbd libpam-systemd kmod sudo \
     openssh-server adbd network-manager wpasupplicant iw wireless-regdb rfkill \
     systemd-zram-generator cloud-guest-utils e2fsprogs dosfstools fdisk \
     ca-certificates curl unzip xz-utils file procps psmisc strace gdb binutils less nano lsof pciutils \
@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xserver-xorg-core xserver-xorg-input-libinput xinit xauth x11-xserver-utils x11-utils x11-apps \
     xdotool openbox \
     libgl1-mesa-dri libglx-mesa0 libegl1 libgles2 libgbm1 mesa-vulkan-drivers libvulkan1 vulkan-tools mesa-utils \
-    pipewire pipewire-pulse wireplumber alsa-utils \
+    pipewire pipewire-pulse pipewire-alsa wireplumber rtkit alsa-utils \
     libnss3 libnspr4 libdrm2 libgl1 libgtk-3-0t64 libgtk2.0-0t64 libxss1 libxtst6 libxrandr2 libxcomposite1 \
     libxdamage1 libxkbcommon0 libxkbcommon-x11-0 libasound2t64 libpulse0 libcups2t64 \
     libatk-bridge2.0-0t64 libatspi2.0-0t64 libudev1 libusb-1.0-0 libsdl2-2.0-0 libfontconfig1 \

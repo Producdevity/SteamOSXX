@@ -1,0 +1,14 @@
+#!/bin/sh
+# Runs as root before the Steam session starts.
+. /etc/steam-session.conf
+chmod 666 /dev/uinput 2>/dev/null
+# H616 codec defaults to about -42 dB (DAC and line out each attenuate); keep the hardware stages at
+# 0 dB and leave volume to PipeWire/Steam.
+amixer -c0 -q sset DAC 100% on 2>/dev/null
+amixer -c0 -q sset "Line Out" 100% on 2>/dev/null
+amixer -c0 -q sset Speaker on 2>/dev/null
+if [ "${PADMAP:-0}" = 1 ]; then
+  pgrep -x padmap >/dev/null || /usr/local/bin/padmap &
+fi
+rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+true

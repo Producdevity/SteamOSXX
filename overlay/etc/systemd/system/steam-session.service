@@ -1,17 +1,27 @@
 [Unit]
-Description=Steam Big Picture session (Xorg on the panel)
+Description=Steam Big Picture session (steam user, Xorg on tty7)
 After=systemd-user-sessions.service network.target firstboot.service
 Conflicts=getty@tty7.service
 StartLimitIntervalSec=0
 
 [Service]
-ExecStart=/usr/local/bin/steam-session
-Restart=always
-RestartSec=5
+# A real logind session: user systemd instance (PipeWire), XDG_RUNTIME_DIR, rootless Xorg on seat0.
+User=steam
+PAMName=login
 TTYPath=/dev/tty7
-StandardInput=null
+TTYReset=yes
+TTYVHangup=yes
+StandardInput=tty
 StandardOutput=journal
 StandardError=journal
+UtmpIdentifier=tty7
+UtmpMode=user
+Environment=XDG_SESSION_TYPE=x11 XDG_SESSION_CLASS=user XDG_SEAT=seat0 XDG_VTNR=7
+ExecStartPre=+/usr/bin/chvt 7
+ExecStartPre=+/usr/local/bin/steam-session-prep
+ExecStart=/usr/bin/startx /usr/local/bin/steam-session-x -- :0 vt7 -keeptty -nolisten tcp -s 0 -dpms
+Restart=always
+RestartSec=5
 KillMode=control-group
 
 [Install]

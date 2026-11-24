@@ -15,7 +15,10 @@ export SDL_VIDEO_X11_DGAMOUSE=0
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 [ -d "$XDG_RUNTIME_DIR" ] || XDG_RUNTIME_DIR=/tmp/xdg-$(id -u)
 mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
-[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || eval "$(dbus-launch --sh-syntax)"
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  if [ -S "$XDG_RUNTIME_DIR/bus" ]; then export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+  else eval "$(dbus-launch --sh-syntax)"; fi
+fi
 ui=()
 [ "${STEAM_UI:-gamepadui}" = gamepadui ] && ui=(-gamepadui)
 cef=(-cef-disable-gpu -cef-disable-gpu-compositing)
