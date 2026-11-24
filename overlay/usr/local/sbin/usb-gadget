@@ -1,0 +1,50 @@
+#!/bin/sh
+# USB gadget with one adb FunctionFS function, laid out like muOS's (VID 1d6b, PID 0105),
+# so a host that already talks adb to this device under muOS binds the same driver.
+#   usb-gadget start|stop
+set -u
+G=/sys/kernel/config/usb_gadget/g1
+FFS=/dev/usb-ffs/adb
+
+serial() {
+  for f in /proc/device-tree/serial-number /sys/firmware/devicetree/base/serial-number; do
+    [ -r "$f" ] && { tr -d '\0' < "$f"; return; }
+  done
+  cat /etc/machine-id
+}
+
+start() {
+  modprobe libcomposite 2>/dev/null
+  mountpoint -q /sys/kernel/config || mount -t configfs none /sys/kernel/config
+  for i in $(seq 1 50); do [ -n "$(ls /sys/class/udc 2>/dev/null)" ] && break; sleep 0.2; done
+  udc=$(ls /sys/class/udc | head -1)
+  [ -n "$udc" ] || { echo "usb-gadget: no UDC"; exit 1; }
+  mkdir -p $G/strings/0x409 $G/configs/c.1/strings/0x409 $G/functions/ffs.adb
+  echo 0x1d6b > $G/idVendor
+  echo 0x0105 > $G/idProduct
+  serial > $G/strings/0x409/serialnumber
+  echo "SteamOS-RG" > $G/strings/0x409/manufacturer
+  echo "RG40XX-H" > $G/strings/0x409/product
+  echo "adb" > $G/configs/c.1/strings/0x409/configuration
+  echo 500 > $G/configs/c.1/MaxPower
+  [ -L $G/configs/c.1/ffs.adb ] || ln -s $G/functions/ffs.adb $G/configs/c.1/
+  mkdir -p $FFS
+  mountpoint -q $FFS || mount -t functionfs adb $FFS
+  /usr/sbin/adbd &
+  for i in $(seq 1 50); do [ -e $FFS/ep1 ] && break; sleep 0.2; done
+  echo "$udc" > $G/UDC
+  echo "usb-gadget: adb on $udc, serial $(cat $G/strings/0x409/serialnumber)"
+  wait
+}
+
+stop() {
+  [ -e $G/UDC ] && echo "" > $G/UDC 2>/dev/null
+  pkill -x adbd
+  mountpoint -q $FFS && umount $FFS
+}
+
+case "${1:-}" in
+  start) start ;;
+  stop) stop ;;
+  *) echo "usage: $0 start|stop"; exit 2 ;;
+esac

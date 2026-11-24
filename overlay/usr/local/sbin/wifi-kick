@@ -1,0 +1,18 @@
+#!/bin/sh
+# rtw88_8821cs is built into the kernel and can probe before the root filesystem
+# (and its firmware) is mounted. If no wlan interface shows up, rebind the SDIO function.
+for i in $(seq 1 20); do
+  ls /sys/class/net | grep -q '^wlan' && exit 0
+  sleep 1
+done
+for dev in /sys/bus/sdio/devices/*; do
+  [ -e "$dev" ] || continue
+  name=${dev##*/}
+  drv=$(readlink "$dev/driver" 2>/dev/null)
+  echo "wifi-kick: rebinding $name (${drv##*/})"
+  [ -n "$drv" ] && echo "$name" > "$dev/driver/unbind"
+  sleep 1
+  echo "$name" > /sys/bus/sdio/drivers/rtw88_8821cs/bind 2>/dev/null || echo "$name" > /sys/bus/sdio/drivers_probe
+done
+sleep 5
+ls /sys/class/net

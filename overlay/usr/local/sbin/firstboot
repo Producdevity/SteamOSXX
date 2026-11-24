@@ -1,0 +1,10 @@
+#!/bin/sh
+# One-time setup on the device: grow the root partition to the card, new SSH host keys.
+set -x
+root=$(findmnt -no SOURCE /)
+disk=/dev/$(lsblk -no PKNAME "$root")
+part=$(cat /sys/class/block/${root##*/}/partition)
+growpart "$disk" "$part" && resize2fs "$root"
+ssh-keygen -A
+mkdir -p /var/log/journal && systemd-tmpfiles --create --prefix /var/log/journal
+touch /var/lib/firstboot.done

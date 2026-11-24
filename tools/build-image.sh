@@ -1,0 +1,61 @@
+#!/bin/bash
+# Assembles out/steamos-rg40xx.img from ROCKNIX's U-Boot + kernel + DTBs and our rootfs.
+#   tools/build-image.sh             (runs itself inside an amd64 Debian container)
+# Layout: MBR (disk id 53544d52), U-Boot at 8 KiB, p1 FAT32 "STEAMBOOT" 256 MiB at 16 MiB,
+#         p2 ext4 "steamroot" sized to its contents (grown to the card on first boot).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if [ ! -f /.dockerenv ]; then
+  exec env MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 -v "$(pwd -W 2>/dev/null || pwd):/w" -w /w \
+    debian:trixie bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >/dev/null;
+      apt-get install -y -qq e2fsprogs dosfstools mtools fdisk >/dev/null 2>&1; tools/build-image.sh'
+fi
+
+DTB=${DTB:-sun50i-h700-anbernic-rg40xx-h.dtb}
+work=/tmp/img
+rm -rf $work && mkdir -p $work/root $work/boot/extlinux $work/boot/dtbs
+echo "== unpacking rootfs"
+tar -C $work/root -xpf out/rootfs.tar --numeric-owner
+rm -f $work/root/.dockerenv
+if [ -f cache/steam-home.tar ]; then
+  echo "== seeding the Steam install from cache/steam-home.tar"
+  tar -C $work/root/home/steam -xpf cache/steam-home.tar --numeric-owner
+  chown -R 1000:1000 $work/root/home/steam
+fi
+
+echo "== boot partition"
+cp cache/boot/KERNEL $work/boot/KERNEL
+cp cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb $work/boot/dtbs/
+cat > $work/boot/extlinux/extlinux.conf <<EOF
+TIMEOUT 1
+DEFAULT steamos
+LABEL steamos
+  LINUX /KERNEL
+  FDT /dtbs/$DTB
+  APPEND root=PARTUUID=53544d52-02 rootwait rw rdinit=/no-initramfs init=/lib/systemd/systemd console=ttyS0,115200 console=tty0 panic=10 loglevel=4 fsck.repair=yes
+EOF
+boot_mb=256
+truncate -s ${boot_mb}M $work/boot.img
+mkfs.vfat -F 32 -n STEAMBOOT -i 53544d52 $work/boot.img >/dev/null
+mcopy -s -i $work/boot.img $work/boot/* ::/
+
+echo "== root partition"
+used_mb=$(du -sm $work/root | cut -f1)
+root_mb=$(( used_mb * 115 / 100 + 768 ))
+mke2fs -q -t ext4 -L steamroot -m 1 -E root_owner=0:0 -d $work/root $work/root.img ${root_mb}M
+
+echo "== disk image"
+out=out/steamos-rg40xx.img
+total_mb=$(( 16 + boot_mb + root_mb + 1 ))
+rm -f $out && truncate -s ${total_mb}M $out
+dd if=cache/uboot.bin of=$out bs=1K seek=8 conv=notrunc status=none
+sfdisk -q $out <<EOF
+label: dos
+label-id: 0x53544d52
+start=16MiB, size=${boot_mb}MiB, type=c, bootable
+start=$(( 16 + boot_mb ))MiB, size=${root_mb}MiB, type=83
+EOF
+dd if=$work/boot.img of=$out bs=1M seek=16 conv=notrunc status=none
+dd if=$work/root.img of=$out bs=1M seek=$(( 16 + boot_mb )) conv=notrunc status=none
+sfdisk -l $out
+ls -la $out

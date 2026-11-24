@@ -1,0 +1,2 @@
+PARTUUID=53544d52-02  /              ext4  defaults,noatime,commit=30  0 1
+PARTUUID=53544d52-01  /boot/firmware vfat  defaults,noatime,umask=022  0 2

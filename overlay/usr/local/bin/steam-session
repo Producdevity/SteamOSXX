@@ -1,0 +1,10 @@
+#!/bin/bash
+# Started by steam-session.service as root: Xorg on the panel (KMS), then steam-session-x as the steam user.
+. /etc/steam-session.conf
+for i in $(seq 1 30); do ls /dev/dri/card* >/dev/null 2>&1 && break; sleep 1; done
+if [ "${PADMAP:-0}" = 1 ]; then
+  pgrep -x padmap >/dev/null || /usr/local/bin/padmap &
+fi
+chmod 666 /dev/uinput 2>/dev/null
+rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+exec xinit /usr/local/bin/steam-session-x -- /usr/lib/xorg/Xorg :0 vt7 -nolisten tcp -keeptty -novtswitch -s 0 -dpms

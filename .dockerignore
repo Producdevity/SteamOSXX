@@ -1,0 +1,6 @@
+cache/*
+!cache/overlay
+out/
+.git
+secrets/id_ed25519*
+secrets/wpa_supplicant.conf

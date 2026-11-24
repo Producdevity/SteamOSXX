@@ -1,0 +1,12 @@
+[Unit]
+Description=Rebind the SDIO Wi-Fi if it probed before its firmware was reachable
+After=local-fs.target
+Before=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/wifi-kick
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+#!/bin/bash
+# X session client (runs as root under xinit): window manager, then Steam as the steam user.
+xhost +si:localuser:steam >/dev/null
+xset s off -dpms 2>/dev/null
+openbox &
+exec runuser -u steam -- env DISPLAY=:0 HOME=/home/steam /usr/local/bin/run-steam.sh
