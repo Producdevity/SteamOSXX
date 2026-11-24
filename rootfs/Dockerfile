@@ -32,7 +32,8 @@ COPY rootfs/src/lse_emu.c /usr/local/src/lse_emu.c
 RUN mkdir -p /usr/local/lib/lse && gcc -shared -fPIC -O2 -march=armv8-a -mno-outline-atomics \
       -Wl,-z,now -o /usr/local/lib/lse/liblse_emu.so /usr/local/src/lse_emu.c -ldl \
  && strip --strip-unneeded /usr/local/lib/lse/liblse_emu.so \
- && ! objdump -d /usr/local/lib/lse/liblse_emu.so | grep -qE $'\t((ld|st)(add|clr|eor|set|smax|smin|umax|umin)|swp|cas)[a-z]*\t'
+ && ! objdump -d /usr/local/lib/lse/liblse_emu.so | grep -qE $'\t((ld|st)(add|clr|eor|set|smax|smin|umax|umin)|swp|cas)[a-z]*\t' \
+ && cp /usr/local/lib/lse/liblse_emu.so /usr/local/lib/lse/liblse_emu_sys.so
 COPY rootfs/src/padmap.c /usr/local/src/padmap.c
 RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
 
