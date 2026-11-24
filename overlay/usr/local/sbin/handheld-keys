@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Volume and brightness keys for the RG40XX-H.
+
+Volume up/down (gpio-keys-volume) step the PipeWire default sink of the steam session by 5 %.
+Holding the menu button (BTN_MODE on "H700 Gamepad", ROCKNIX's function modifier) turns them into
+backlight up/down instead.
+"""
+import glob
+import os
+import select
+import struct
+import subprocess
+
+EV_KEY, KEY_VOLUMEDOWN, KEY_VOLUMEUP, BTN_MODE = 1, 114, 115, 316
+EVENT = struct.Struct("llHHi")
+STEAM_UID = 1000
+
+
+def find(name):
+    for path in sorted(glob.glob("/dev/input/event*")):
+        try:
+            with open(f"/sys/class/input/{os.path.basename(path)}/device/name") as f:
+                if f.read().strip() == name:
+                    return os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError:
+            pass
+    return None
+
+
+def volume(step):
+    env = dict(os.environ, XDG_RUNTIME_DIR=f"/run/user/{STEAM_UID}")
+    arg = f"{abs(step)}%{'+' if step > 0 else '-'}"
+    subprocess.run(["runuser", "-u", "steam", "--", "wpctl", "set-volume", "-l", "1.0",
+                    "@DEFAULT_AUDIO_SINK@", arg], env=env, check=False)
+
+
+def brightness(step):
+    for bl in glob.glob("/sys/class/backlight/*"):
+        cur = int(open(f"{bl}/brightness").read())
+        top = int(open(f"{bl}/max_brightness").read())
+        new = max(max(1, top // 20), min(top, cur + step * max(1, top // 10)))
+        open(f"{bl}/brightness", "w").write(str(new))
+
+
+def main():
+    vol = find("gpio-keys-volume")
+    pad = find("H700 Gamepad")
+    fds = [fd for fd in (vol, pad) if fd is not None]
+    mode_held = False
+    while True:
+        ready, _, _ = select.select(fds, [], [])
+        for fd in ready:
+            data = os.read(fd, EVENT.size * 64)
+            for off in range(0, len(data) - EVENT.size + 1, EVENT.size):
+                _, _, typ, code, val = EVENT.unpack_from(data, off)
+                if typ != EV_KEY:
+                    continue
+                if code == BTN_MODE:
+                    mode_held = val != 0
+                elif code in (KEY_VOLUMEUP, KEY_VOLUMEDOWN) and val in (1, 2):
+                    step = 1 if code == KEY_VOLUMEUP else -1
+                    if mode_held:
+                        brightness(step)
+                    else:
+                        volume(5 * step)
+
+
+if __name__ == "__main__":
+    main()

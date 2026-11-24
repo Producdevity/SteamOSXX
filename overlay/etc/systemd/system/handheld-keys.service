@@ -1,0 +1,11 @@
+[Unit]
+Description=Volume and brightness keys (volume keys, menu+volume for backlight)
+After=steam-session.service
+
+[Service]
+ExecStart=/usr/local/sbin/handheld-keys
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
