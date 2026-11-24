@@ -57,7 +57,7 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
  && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service handheld-keys.service sxx-vpad.service \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service handheld-keys.service sxx-vpad.service game-mode.service \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
  && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \

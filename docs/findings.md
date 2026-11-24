@@ -159,3 +159,16 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - Tools: `sxx-wrap` (launch-option wrapper: env + output to `/tmp/sxx-wrap-<appid>.log`),
   `sxx-launch-debug` (run a game's chain by hand with Proton logging), `sxx eval
   'SteamClient.Apps.RunGame("8400","",-1,100)'` and `SteamClient.Apps.SetAppLaunchOptions(...)` to drive it.
+
+### Geometry Wars performance (640x480, Proton Experimental ARM64, FEX, stock settings)
+| Setup | Intro | Main menu (particles) |
+|---|---|---|
+| DXVK on llvmpipe (CPU Vulkan) | 6.4 FPS | 3.0 FPS (web helper SIGSTOPped), 1.3 FPS (web helper running) |
+| WineD3D on Panfrost GL 3.1 (`PROTON_USE_WINED3D=1`) | 4.5 FPS, wrong colours/glow | - |
+- During play, zram swap is ~95 % full (926-969 of 974 MB) and `kswapd0` is busy; the game takes ~250-280 MB
+  RSS and up to 277 % CPU. Steam's web helper keeps 70-85 % of a core rendering Big Picture behind the game.
+- The game's input arrives through Steam Input (`SteamVirtualGamepadInfo_Proton`); at 1-3 FPS a press must be
+  held longer than a frame (`sxx pad hold:a:1500`).
+- DXVK stays the default (faster and correct). The real limits are CPU-side: FEX translation and software
+  Vulkan. Levers: web helper priority during games, FEX TSO settings, ARMv8.0 Proton/FEX builds (no LSE traps),
+  PanVK on the GPU.
