@@ -57,4 +57,5 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
       wifi-kick.service steam-session.service systemd-timesyncd.service \
  && systemctl set-default multi-user.target \
+ && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \
  && depmod 7.2.0 && udevadm hwdb --update
