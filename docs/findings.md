@@ -62,3 +62,14 @@ change how we work also go into `lessons-learned.md`.
   `runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority xwd -root` for screenshots.
 - Volume keys (`gpio-keys-volume`) and menu+volume (backlight) handled by `handheld-keys.service`
   (backlight max 2499 on this panel).
+
+### Sleep / wake (parked)
+- ROCKNIX gets `mem` suspend on H700 from a TF-A patch (`uboot/tfa-patches/001-allwinner-h616-psci-system-suspend.patch`,
+  from kailashrs' H700_rocknix_enhancement): BL31 copies a stub into SRAM A1, puts DRAM into self-refresh,
+  WFIs, and on wake **re-trains DRAM with the parameters the stub was built with**. TF-A only enables system
+  suspend when the running DRAM type and clock match a stub (`SUNXI_SUSPEND_STUB`, optional `..._STUB2`).
+- So the stub must be built from this unit's LPDDR4 timings (the muOS values in `rg40xxh_2025_lpddr4_defconfig`);
+  ROCKNIX's stub carries the ROCKNIX timings that do not train here and would hang on wake. ROCKNIX builds the
+  stub in its u-boot package; that build has to be reproduced with our defconfig before testing.
+- Test only with an RTC wake alarm (`rtcwake -m mem -s 20`) and the recovery loop in place: a hang during
+  suspend is the one state the watchdog does not cover.
