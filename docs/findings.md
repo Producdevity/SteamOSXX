@@ -83,3 +83,11 @@ change how we work also go into `lessons-learned.md`.
   the session script then reboots or powers off. `STEAM_ENABLE_VOLUME_HANDLER=1` lets Steam handle the
   volume keys itself. The gamescope-specific variables (VRR, HDR, NIS, mangoapp) do not apply without gamescope.
 - `upower` provides the battery to Steam (`battery_battery` and `line_power_axp20x_usb` on this device).
+
+### First Big Picture on mainline (2026-11-24 20:56 UTC)
+- After the self-update (download ~580 MB; extraction 4.5 min vs ~10 min on muOS), relaunch to web helper
+  `BrowserReady` took 25 s (muOS: several minutes) and Big Picture painted about a minute later.
+- The Steam login carried over from muOS through the seeded `~/.local/share/Steam` (no new QR scan).
+- Big Picture shows battery and Wi-Fi in the status bar (upower, NetworkManager) and controller glyphs
+  (the built-in pad is recognised with no remapping).
+- Time zone was UTC; set to America/New_York (also in the image).

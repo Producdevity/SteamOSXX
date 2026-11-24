@@ -59,6 +59,7 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
       wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service handheld-keys.service \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
  && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
+ && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \
  && systemctl set-default multi-user.target \
  && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \
  && depmod 7.2.0 && udevadm hwdb --update
