@@ -15,7 +15,7 @@ if [ ! -f cache/rocknix.img ]; then
   echo "$want  cache/$name" | sha256sum -c -
   gzip -dc cache/$name > cache/rocknix.img
 fi
-MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 -v "$(pwd -W 2>/dev/null || pwd)/cache:/w" -w /w debian:trixie bash -c '
+MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W 2>/dev/null || pwd)/cache:/w" -w /w debian:trixie bash -c '
   set -e; export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >/dev/null
   apt-get install -y -qq mtools squashfs-tools >/dev/null 2>&1
   dd if=rocknix.img of=uboot.bin bs=1K skip=8 count=16376 status=none
