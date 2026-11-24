@@ -1,0 +1,3 @@
+#!/bin/bash
+# Steam (-steamos3) toggles developer mode; nothing to do on this device.
+exit 0

@@ -1,0 +1,4 @@
+# udev's input_id classifies the built-in pad as a tablet pad too, so Xorg (libinput) adopts it and turns
+# its buttons into pointer clicks at the cursor (screen centre). Steam reads the pad through evdev; keep
+# it away from libinput and drop the tablet tags.
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="H700 Gamepad", ENV{ID_INPUT_TABLET}="", ENV{ID_INPUT_TABLET_PAD}="", ENV{LIBINPUT_IGNORE_DEVICE}="1"

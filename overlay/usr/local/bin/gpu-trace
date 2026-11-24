@@ -1,0 +1,3 @@
+#!/bin/bash
+# SteamOS GPU tracing helper called by Steam (-steamos3); not available here.
+exit 1

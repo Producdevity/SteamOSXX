@@ -1,0 +1,3 @@
+#!/bin/bash
+# Privileged SteamOS helper path the client calls; same as the unprivileged stub here.
+exec /usr/local/bin/steamos-update "$@"

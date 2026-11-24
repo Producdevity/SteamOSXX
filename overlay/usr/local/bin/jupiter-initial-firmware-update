@@ -1,0 +1,3 @@
+#!/bin/bash
+# Steam Deck controller/firmware check called by Steam (-steamos3); no such firmware here.
+exit 0

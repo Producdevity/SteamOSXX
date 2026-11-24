@@ -97,3 +97,12 @@ change how we work also go into `lessons-learned.md`.
 - On-screen keyboard in plain `-gamepadui`: A shows a mouse cursor in the screen centre and clicks there,
   which dismisses the keyboard; focus never leaves the Big Picture window and no new X window appears (the
   keyboard is drawn inside it). Trying SteamOS client mode (`-steamos3 -steampal -steamdeck`).
+- **Root cause of the dismissing keyboard:** udev's input_id tags the `H700 Gamepad` as
+  `ID_INPUT_TABLET`/`ID_INPUT_TABLET_PAD` (as well as joystick), so Xorg's "libinput tablet catchall" adopts it
+  and its buttons become pointer clicks at the cursor, which starts in the screen centre. A press = click
+  outside the keyboard. `80-h700-gamepad.rules` clears the tablet tags and sets `LIBINPUT_IGNORE_DEVICE=1`;
+  Steam still reads the pad through evdev. Confirmed fixed on device. (SteamOS client mode did not change it.)
+- SteamOS client mode works: SteamOS boot splash, then the Deck UI. The client calls
+  `jupiter-initial-firmware-update check`, `gpu-trace --get-tracing-status`,
+  `/usr/bin/steamos-polkit-helpers/steamos-devkit-mode --disable` and probes for a mangoapp window; stubs are in
+  the overlay.
