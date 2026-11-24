@@ -1,0 +1,50 @@
+#!/bin/busybox sh
+# Debug initramfs: logs the boot to the STEAMBOOT FAT partition, then switches to the real root.
+# Each boot writes bootlog-N.txt; read it later from muOS (/mnt/sdcard when the card is in slot 2).
+/bin/busybox --install -s /bin
+export PATH=/bin
+mkdir -p /proc /sys /dev /mnt/boot /mnt/root
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+
+boot=
+for i in $(seq 1 40); do
+  boot=$(findfs LABEL=STEAMBOOT 2>/dev/null) && break
+  sleep 0.5
+done
+if [ -n "$boot" ] && mount -t vfat -o rw,sync "$boot" /mnt/boot; then
+  n=0; while [ -e /mnt/boot/bootlog-$n.txt ]; do n=$((n + 1)); done
+  log=/mnt/boot/bootlog-$n.txt
+else
+  log=/dev/kmsg
+fi
+note() { echo "debug-init: $*" >> "$log"; echo "debug-init: $*" > /dev/kmsg; sync; }
+
+note "reached initramfs, uptime $(cut -d' ' -f1 /proc/uptime)s, boot partition $boot"
+note "cmdline: $(cat /proc/cmdline)"
+note "block devices: $(ls /sys/class/block | tr '\n' ' ')"
+note "panels/drm: $(ls /sys/class/drm 2>/dev/null | tr '\n' ' ') backlight: $(ls /sys/class/backlight 2>/dev/null)"
+note "udc: $(ls /sys/class/udc 2>/dev/null)  net: $(ls /sys/class/net | tr '\n' ' ')"
+
+root=
+for i in $(seq 1 40); do
+  root=$(findfs LABEL=steamroot 2>/dev/null) && break
+  sleep 0.5
+done
+note "root device: ${root:-not found}"
+dmesg >> "$log"; sync
+
+if [ -z "$root" ] || ! mount -t ext4 -o rw "$root" /mnt/root; then
+  note "root mount failed; dmesg follows, rebooting in 20 s"
+  dmesg >> "$log"; sync
+  sleep 20
+  reboot -f
+fi
+note "root mounted; init is $(ls -l /mnt/root/lib/systemd/systemd 2>&1)"
+
+note "switching root"
+umount /mnt/boot 2>/dev/null
+mount --move /dev /mnt/root/dev 2>/dev/null
+umount /proc /sys 2>/dev/null
+exec switch_root /mnt/root /lib/systemd/systemd

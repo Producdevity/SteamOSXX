@@ -1,0 +1,27 @@
+
+/* RG40XX-H second SD slot (TF2) on the mmc2 controller, from ROCKNIX's rg40xx-h device tree. */
+/ {
+	aliases {
+		mmc0 = &mmc0;
+		mmc2 = &mmc2;
+	};
+
+	reg_vcc3v3_mmc2: regulator-vcc3v3-mmc2 {
+		compatible = "regulator-fixed";
+		enable-active-high;
+		gpio = <&pio 4 4 GPIO_ACTIVE_HIGH>;	/* PE4 */
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-name = "vcc3v3-mmc2";
+		regulator-always-on;
+	};
+};
+
+&mmc2 {
+	bus-width = <4>;
+	cd-gpios = <&pio 4 22 GPIO_ACTIVE_LOW>;	/* PE22 */
+	disable-wp;
+	no-1-8-v;
+	vmmc-supply = <&reg_vcc3v3_mmc2>;
+	status = "okay";
+};

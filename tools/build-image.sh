@@ -17,6 +17,9 @@ rm -rf $work && mkdir -p $work/root $work/boot/extlinux $work/boot/dtbs
 echo "== unpacking rootfs"
 tar -C $work/root -xpf out/rootfs.tar --numeric-owner
 rm -f $work/root/.dockerenv
+# docker export leaves the container-managed files empty
+cp overlay/etc/hostname overlay/etc/hosts $work/root/etc/
+rm -f $work/root/etc/resolv.conf && ln -s ../run/NetworkManager/resolv.conf $work/root/etc/resolv.conf
 if [ -f cache/steam-home.tar ]; then
   echo "== seeding the Steam install from cache/steam-home.tar"
   tar -C $work/root/home/steam -xpf cache/steam-home.tar --numeric-owner
@@ -48,7 +51,10 @@ echo "== disk image"
 out=out/steamos-rg40xx.img
 total_mb=$(( 16 + boot_mb + root_mb + 1 ))
 rm -f $out && truncate -s ${total_mb}M $out
-dd if=cache/uboot.bin of=$out bs=1K seek=8 conv=notrunc status=none
+UBOOT=${UBOOT:-out/uboot/card.bin}
+[ -f "$UBOOT" ] || UBOOT=cache/uboot.bin
+echo "== U-Boot: $UBOOT"
+dd if="$UBOOT" of=$out bs=1K seek=8 conv=notrunc status=none
 sfdisk -q $out <<EOF
 label: dos
 label-id: 0x53544d52
