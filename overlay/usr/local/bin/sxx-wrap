@@ -1,0 +1,6 @@
+#!/bin/sh
+# Launch-option wrapper for debugging a game started by Steam: set its launch options to
+# "sxx-wrap %command%". Writes the environment, the command and all output to /tmp/sxx-wrap-<appid>.log.
+log=/tmp/sxx-wrap-${SteamAppId:-unknown}.log
+{ echo "== $(date) command:"; printf ' [%s]' "$@"; echo; echo "== environment:"; env | sort; echo "== output:"; } > "$log"
+exec "$@" >> "$log" 2>&1

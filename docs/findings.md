@@ -128,3 +128,34 @@ change how we work also go into `lessons-learned.md`.
   link stays out of `configured` for 3 s after having been up.
 - `session-N.scope` units of earlier Steam sessions show as failed after a session restart; the prep script
   runs `systemctl reset-failed "session-*.scope"`.
+
+### First game: Geometry Wars (AppID 8400) through Proton Experimental (ARM64) (2026-11-24)
+Launched from Steam, renders its intro. Four separate blockers, in the order they were hit:
+1. **bwrap "Unexpected capabilities but not setuid".** systemd 257's pam_systemd gives user sessions an ambient
+   `CAP_WAKE_ALARM`; any ambient capability makes pressure-vessel's bwrap refuse to start, so no game ever
+   launches. The `default-capability-ambient-set=` pam_systemd option with an empty value did not clear it;
+   `steam-session.service` now starts the session through `setpriv --ambient-caps -all --inh-caps -all`.
+2. **SIGILL in the shell Steam starts for the game.** Steam builds the game's `LD_PRELOAD` from its overlay
+   (`steamrtarm64/gameoverlayrenderer.so`, built with inline LSE) plus whatever the client had. Preloads
+   initialise in **reverse load order**, so with LSE-Emu first and the overlay after it, the overlay's
+   constructor runs before the SIGILL handler exists (verified: `LD_PRELOAD=lse:overlay /bin/true` -> 132,
+   `overlay:lse` -> 0). Fix: a second copy, `liblse_emu_sys.so`, in `/etc/ld.so.preload`; it loads after all
+   `LD_PRELOAD` entries and so initialises first. (The same file in both places is loaded once, at the first
+   position, which is why it has to be a separate copy.)
+3. **SIGBUS (`BUS_ADRERR`) in the overlay.** `/dev/shm` (tmpfs, half of RAM = 488 MB) was 93 % full of Steam
+   (`u1000-Shm_*`) and FEX segments leaked by killed sessions; mapping a new segment then faults.
+   `steam-session-prep` deletes the steam user's `/dev/shm` leftovers before the client starts.
+4. **SIGILL inside the game container.** The host's `/etc/ld.so.preload` does not apply inside
+   pressure-vessel; host `LD_PRELOAD` entries are carried in. The session keeps
+   `LD_PRELOAD=liblse_emu.so` and sets `PRESSURE_VESSEL_REMOVE_GAME_OVERLAY=1` so no LSE-built overlay runs in
+   the container before the handler (cost: no Steam in-game overlay for now).
+- LSE-Emu default changed for this ARMv8.0-only image: active for every non-root process unless `LSE_EMU=0`
+  (upstream requires `LSE_EMU=1`, which launch environments can drop). In the game container it patched 1,897
+  sites in Valve's ARMv8.2 Wine/FEX with nothing unhandled.
+- Rendering is DXVK on **llvmpipe** (CPU Vulkan): works, but slow. Next: `PROTON_USE_WINED3D=1` (WineD3D on
+  Panfrost GL 3.1) and the ARMv8.0 Proton/FEX rebuilds from sunshineinabox/proton-armv8.
+- `steam-launch-wrapper` exports `VK_INSTANCE_LAYERS=VK_LAYER_VALVE_rpo:VK_LAYER_VALVE_fdm_injection` (Steam
+  Frame VR layers) for every game on this client channel; harmless here so far.
+- Tools: `sxx-wrap` (launch-option wrapper: env + output to `/tmp/sxx-wrap-<appid>.log`),
+  `sxx-launch-debug` (run a game's chain by hand with Proton logging), `sxx eval
+  'SteamClient.Apps.RunGame("8400","",-1,100)'` and `SteamClient.Apps.SetAppLaunchOptions(...)` to drive it.

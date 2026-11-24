@@ -7,7 +7,7 @@ StartLimitIntervalSec=0
 [Service]
 # A real logind session: user systemd instance (PipeWire), XDG_RUNTIME_DIR, rootless Xorg on seat0.
 User=steam
-PAMName=login
+PAMName=steam-session
 TTYPath=/dev/tty7
 TTYReset=yes
 TTYVHangup=yes
@@ -19,7 +19,9 @@ UtmpMode=user
 Environment=XDG_SESSION_TYPE=x11 XDG_SESSION_CLASS=user XDG_SEAT=seat0 XDG_VTNR=7
 ExecStartPre=+/usr/bin/chvt 7
 ExecStartPre=+/usr/local/bin/steam-session-prep
-ExecStart=/usr/bin/startx /usr/local/bin/steam-session-x -- :0 vt7 -keeptty -nolisten tcp -s 0 -dpms
+# pam_systemd (systemd 257) gives user sessions an ambient CAP_WAKE_ALARM; any ambient capability makes
+# pressure-vessel's bwrap refuse to run ("Unexpected capabilities but not setuid"), so games never start.
+ExecStart=/usr/bin/setpriv --ambient-caps -all --inh-caps -all -- /usr/bin/startx /usr/local/bin/steam-session-x -- :0 vt7 -keeptty -nolisten tcp -s 0 -dpms
 Restart=always
 RestartSec=5
 KillMode=control-group

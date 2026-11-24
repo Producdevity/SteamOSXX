@@ -719,11 +719,12 @@ __attribute__((constructor)) static void init(void) {
     resolve();
     if (getauxval(AT_HWCAP) & HWCAP_ATOMICS) return;     // CPU has real LSE
     
-    // Exit silently if LSE_EMU is missing or not set to "1"
+    // SteamOSXX: loaded from /etc/ld.so.preload on an ARMv8.0-only image, because Steam replaces
+    // LD_PRELOAD (with its LSE-built overlay) for game launches. LSE_EMU=1 forces it on, LSE_EMU=0 off;
+    // unset, it is on for every non-root process (Steam, its helpers and games run as a user).
     const char *emu_env = getenv("LSE_EMU");
-    if (!emu_env || emu_env[0] != '1') {
-        return; 
-    } 
+    if (emu_env && emu_env[0] == '0') return;
+    if (!(emu_env && emu_env[0] == '1') && getuid() == 0) return;
 
     struct sigaction sa; memset(&sa, 0, sizeof sa);
     sa.sa_sigaction = on_sigill;
@@ -734,7 +735,7 @@ __attribute__((constructor)) static void init(void) {
 
     const char *p = getenv("LSE_EMU_PATCH");
     stats = getenv("LSE_EMU_STATS") != NULL;
-    if (p && p[0] == '1' && !skipped()) {
+    if (!(p && p[0] == '0') && !skipped()) {
         refresh_ranges();
         patch_enabled = 1;
     }

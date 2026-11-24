@@ -11,6 +11,9 @@ if [ "${PADMAP:-0}" = 1 ]; then
   pgrep -x padmap >/dev/null || /usr/local/bin/padmap &
 fi
 rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+# Steam and FEX leave shared memory behind when a session is killed; a full /dev/shm (tmpfs, half of RAM)
+# makes the next process that maps a segment die with SIGBUS (Steam's overlay in every game launch).
+find /dev/shm -maxdepth 1 -user steam \( -name "u1000-*" -o -name "fex-*" -o -name "sem.*" \) -delete 2>/dev/null
 # scopes of earlier Steam sessions stay "failed" after a session restart
 systemctl reset-failed "session-*.scope" 2>/dev/null
 true

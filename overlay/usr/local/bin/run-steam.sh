@@ -9,8 +9,15 @@ if [ ! -x "$root/steamrtarm64/steam" ]; then
 fi
 export STEAM_RUNTIME=1 STEAM_STEAMRT_RECURSION_GUARD=1
 export LD_LIBRARY_PATH=$root/steamrtarm64:$root/steamrtarm64/panorama
+# LSE-Emu (ARMv8.0 has no LSE atomics; the client, its overlay, Proton and FEX are built with them):
+# - liblse_emu_sys.so is in /etc/ld.so.preload. It loads after any LD_PRELOAD library and so initialises
+#   first, before Steam's LSE-built overlay, which Steam adds to LD_PRELOAD for game launches.
+# - liblse_emu.so here in LD_PRELOAD is what pressure-vessel carries into the game container, where the
+#   host's ld.so.preload does not apply. The overlay is kept out of the container so nothing LSE-built
+#   runs there before the handler exists.
 export LD_PRELOAD=/usr/local/lib/lse/liblse_emu.so
-export LSE_EMU=1 LSE_EMU_PATCH=1 LSE_EMU_LOG=$HOME/lse_emu.log
+export LSE_EMU=1 LSE_EMU_PATCH=1
+export PRESSURE_VESSEL_REMOVE_GAME_OVERLAY=1
 export SDL_VIDEO_X11_DGAMOUSE=0
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 [ -d "$XDG_RUNTIME_DIR" ] || XDG_RUNTIME_DIR=/tmp/xdg-$(id -u)
