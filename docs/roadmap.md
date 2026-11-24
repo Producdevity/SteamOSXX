@@ -20,9 +20,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] Diff the running device against `overlay/` + `rootfs/` and fold in anything missing. S
 - [ ] Rebuild rootfs and image from scratch; flash slot 2 from muOS (`dd` to `/dev/mmcblk1`), FEL-boot, run
       `tools/smoke.sh`. Automate as `tools/reflash-slot2.sh`. M
-- [ ] Pin the Steam bootstrap: fetch `steam_client_steamdeck_stable_linuxarm64` (or publicbeta) + the
-      `steamrt3c` arm64 runtime by SHA256 at build time, including `package/*.zip*` so the first start does
-      not re-download (Armada's `steam-bootstrap/fetch.py` pattern). M
+- [~] Pin the Steam bootstrap: `tools/fetch-steam.sh` installs the arm64 client from the CDN manifest
+      (each package SHA256-checked) into a clean seed tar; `STEAM_SEED=` puts it in the image. Still to do:
+      pin a manifest version, and check that the first start does not re-download. M
 - [ ] CI: GitHub Actions builds U-Boot, rootfs and image (arm64 runners or QEMU). M
 
 ## 2. Games
@@ -31,6 +31,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
       `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S
 - [ ] fex-armv8 for native x86 Linux games. S/M
+- [~] Never livelock on memory: earlyoom (games first), MGLRU `min_ttl_ms`, 2 GB swapfile behind zram,
+      memory-locked `reach-guard` with a real sshd probe. Verify with a deliberate memory hog. S
+- [~] Game windows on top: `sxx-focus` implements gamescope's base-layer focus protocol for Steam. S
 - [ ] Game mode for 1 GB: suspend or unload steamwebhelper while a game runs, per-game zram/swap
       (Switchdeck's `SD_GAMEMODE`). Measure free RAM in game before/after. M
 - [ ] Steam in-game overlay back in the container: LSE-Emu must initialise before the overlay there too

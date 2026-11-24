@@ -20,9 +20,12 @@ rm -f $work/root/.dockerenv
 # docker export leaves the container-managed files empty
 cp overlay/etc/hostname overlay/etc/hosts $work/root/etc/
 rm -f $work/root/etc/resolv.conf && ln -s ../run/NetworkManager/resolv.conf $work/root/etc/resolv.conf
-if [ -f cache/steam-home.tar ]; then
-  echo "== seeding the Steam install from cache/steam-home.tar"
-  tar -C $work/root/home/steam -xpf cache/steam-home.tar --numeric-owner
+# STEAM_SEED: a clean client from tools/fetch-steam.sh for release images; cache/steam-home.tar (a dev
+# install, with its login) is the default for the dev card.
+seed=${STEAM_SEED:-cache/steam-home.tar}
+if [ -f "$seed" ]; then
+  echo "== seeding the Steam install from $seed"
+  tar -C $work/root/home/steam -xpf "$seed" --numeric-owner
   chown -R 1000:1000 $work/root/home/steam
 fi
 
