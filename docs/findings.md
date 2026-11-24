@@ -205,6 +205,13 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   a launched game stays hidden behind Big Picture.
 - Steam's own windows carry `STEAM_GAME=769`; Proton game windows had no `STEAM_GAME`, only
   `WM_CLASS steam_app_8400`.
-- `sxx-focus` plays gamescope's side: tags game windows with `STEAM_GAME` (from `steam_app_N` or the
-  process's `SteamGameId`), publishes `GAMESCOPE_FOCUSABLE_APPS/_WINDOWS` and `GAMESCOPE_FOCUSED_APP/_WINDOW`,
-  and activates the window of the first base-layer app through openbox (`_NET_ACTIVE_WINDOW`, pager source).
+- Gamescope's own rules (src/steamcompmgr.cpp, read at master 7d957c5): a window's app is `STEAM_GAME` if set,
+  else `STEAM_BIGPICTURE` -> 769, else from its PID: the `app-steam-app<N>-*.scope` cgroup or the nearest
+  `reaper SteamLaunch AppId=<N>` ancestor. Gamescope never writes `STEAM_GAME` and has no `WM_CLASS` rule.
+  Focus: `GAMESCOPECTRL_BASELAYER_WINDOW` if it names a candidate, else the first appid in
+  `GAMESCOPECTRL_BASELAYER_APPID` that has a window (most recently mapped wins); no match keeps the old focus.
+  `STEAM_OVERLAY` windows are never base-layer candidates (they are composited on top). It publishes
+  `GAMESCOPE_FOCUSABLE_APPS`, `GAMESCOPE_FOCUSABLE_WINDOWS` (`[xid, appid, pid]` triplets),
+  `GAMESCOPE_FOCUSED_APP`, `_APP_GFX` and `_WINDOW` on the root. 413091 does not appear in its source.
+- `sxx-focus` does the same on Xorg, using `_NET_WM_PID` and activating the chosen window through openbox
+  (`_NET_ACTIVE_WINDOW` with the pager source, so focus-stealing prevention does not apply).

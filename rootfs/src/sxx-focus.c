@@ -1,11 +1,10 @@
 // Gamescope's focus protocol on a plain X server. Steam in -steamos3 mode publishes which apps should be
 // on top in GAMESCOPECTRL_BASELAYER_APPID (and GAMESCOPECTRL_BASELAYER_WINDOW) and reads back which apps
 // have windows from GAMESCOPE_FOCUSABLE_APPS / _WINDOWS and GAMESCOPE_FOCUSED_*. This daemon plays the
-// gamescope side: it tags game windows with STEAM_GAME, publishes the focusable lists and activates the
-// window of the first app in Steam's base-layer list through the window manager.
+// gamescope side: it works out each window's app the way gamescope does, publishes the focusable lists and
+// activates the window of the first app in Steam's base-layer list through the window manager.
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +16,7 @@
 
 static Display *d;
 static Window root;
-static Atom a_client_list, a_active, a_steam_game, a_pid, a_base_appid, a_base_window,
+static Atom a_client_list, a_active, a_steam_game, a_bigpicture, a_overlay, a_pid, a_base_appid, a_base_window,
     a_focusable_apps, a_focusable_windows, a_focused_app, a_focused_app_gfx, a_focused_window;
 static int verbose;
 
@@ -39,41 +38,62 @@ static unsigned long get_cardinal(Window w, Atom prop, unsigned long dflt) {
   return r;
 }
 
-static unsigned long appid_from_pid(unsigned long pid) {
-  char path[64], buf[65536];
-  snprintf(path, sizeof path, "/proc/%lu/environ", pid);
+static int read_file(const char *path, char *buf, size_t len) {
   FILE *f = fopen(path, "r");
-  if (!f) return 0;
-  size_t len = fread(buf, 1, sizeof buf - 1, f);
+  if (!f) return -1;
+  size_t n = fread(buf, 1, len - 1, f);
   fclose(f);
-  buf[len] = 0;
-  for (size_t i = 0; i < len; i += strlen(buf + i) + 1) {
-    if (!strncmp(buf + i, "SteamGameId=", 12) || !strncmp(buf + i, "SteamAppId=", 11)) {
-      unsigned long id = strtoul(strchr(buf + i, '=') + 1, NULL, 10);
-      if (id) return id;
+  buf[n] = 0;
+  return (int)n;
+}
+
+// Gamescope's GetAppIdFromPid: the app-steam-app<N>-*.scope cgroup, else the nearest `reaper` ancestor
+// started as `reaper SteamLaunch AppId=<N> ...`.
+static unsigned long appid_from_pid(unsigned long pid) {
+  char path[64], buf[4096];
+  for (int depth = 0; pid > 1 && depth < 64; depth++) {
+    unsigned long id;
+    snprintf(path, sizeof path, "/proc/%lu/cgroup", pid);
+    if (read_file(path, buf, sizeof buf) > 0) {
+      char *scope = strstr(buf, "app-steam-app");
+      if (scope && sscanf(scope, "app-steam-app%lu-", &id) == 1 && id) return id;
     }
+    snprintf(path, sizeof path, "/proc/%lu/cmdline", pid);
+    int n = read_file(path, buf, sizeof buf);
+    const char *base = n > 0 ? strrchr(buf, '/') : NULL;
+    if (n > 0 && !strcmp(base ? base + 1 : buf, "reaper")) {
+      int launch = 0;
+      for (int i = 0; i < n; i += (int)strlen(buf + i) + 1) {
+        launch |= !strcmp(buf + i, "SteamLaunch");
+        if (launch && sscanf(buf + i, "AppId=%lu", &id) == 1 && id) return id;
+      }
+    }
+    snprintf(path, sizeof path, "/proc/%lu/stat", pid);
+    if (read_file(path, buf, sizeof buf) <= 0) break;
+    char *paren = strrchr(buf, ')');
+    unsigned long ppid;
+    if (!paren || sscanf(paren + 1, " %*c %lu", &ppid) != 1) break;
+    pid = ppid;
   }
   return 0;
 }
 
+static struct { Window w; unsigned long pid, appid; } cache[MAXW];
+static int ncache;
+
 static unsigned long window_appid(Window w, unsigned long pid) {
-  unsigned long id = get_cardinal(w, a_steam_game, 0);
+  if (get_cardinal(w, a_bigpicture, 0)) return STEAM_APPID;
+  unsigned long id = get_cardinal(w, a_steam_game, 0);  // authoritative when present, as in gamescope
   if (id) return id;
-  XClassHint ch;
-  if (XGetClassHint(d, w, &ch)) {
-    if (ch.res_name && !strncmp(ch.res_name, "steam_app_", 10)) id = strtoul(ch.res_name + 10, NULL, 10);
-    if (ch.res_name) XFree(ch.res_name);
-    if (ch.res_class) XFree(ch.res_class);
-  }
-  if (!id && pid) id = appid_from_pid(pid);
-  if (id) {  // Steam sets this itself under gamescope; games launched in the container are not matched.
-    long v = (long)id;
-    XChangeProperty(d, w, a_steam_game, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&v, 1);
-  }
+  for (int i = 0; i < ncache; i++)
+    if (cache[i].w == w && cache[i].pid == pid) return cache[i].appid;
+  id = pid ? appid_from_pid(pid) : 0;
+  if (ncache == MAXW) ncache = 0;
+  cache[ncache].w = w; cache[ncache].pid = pid; cache[ncache].appid = id; ncache++;
   return id;
 }
 
-struct win { Window w; unsigned long appid, pid; long area; };
+struct win { Window w; unsigned long appid, pid; };
 
 static void sync_focus(void) {
   unsigned long n;
@@ -82,11 +102,13 @@ static void sync_focus(void) {
   for (unsigned long i = 0; i < n && nw < MAXW; i++) {
     Window w = (Window)clients[i];
     XWindowAttributes wa;
-    if (!XGetWindowAttributes(d, w, &wa) || wa.map_state != IsViewable || wa.width < 64 || wa.height < 64) continue;
+    if (!XGetWindowAttributes(d, w, &wa) || wa.map_state != IsViewable || wa.class == InputOnly ||
+        (wa.width <= 1 && wa.height <= 1) || get_cardinal(w, a_overlay, 0))
+      continue;
     unsigned long pid = get_cardinal(w, a_pid, 0);
     unsigned long id = window_appid(w, pid);
     if (!id) continue;
-    wins[nw++] = (struct win){w, id, pid, (long)wa.width * wa.height};
+    wins[nw++] = (struct win){w, id, pid};
   }
   if (clients) XFree(clients);
 
@@ -105,18 +127,17 @@ static void sync_focus(void) {
   for (int i = 0; i < nw && base_win; i++) if (wins[i].w == base_win) pick = &wins[i];
   unsigned long nb;
   long *base = get_cardinals(root, a_base_appid, XA_CARDINAL, &nb);
+  // _NET_CLIENT_LIST is in mapping order: the last match is the most recently mapped, gamescope's tie-break.
   for (unsigned long b = 0; b < nb && !pick; b++)
-    for (int i = 0; i < nw; i++)
-      if ((long)wins[i].appid == base[b] && (!pick || wins[i].area >= pick->area)) pick = &wins[i];
+    for (int i = nw - 1; i >= 0 && !pick; i--)
+      if ((long)wins[i].appid == base[b]) pick = &wins[i];
   if (base) XFree(base);
-  // Without a base-layer request gamescope shows the game over Steam.
-  for (int i = 0; i < nw && !pick && !nb; i++) if (wins[i].appid != STEAM_APPID) pick = &wins[i];
-  for (int i = 0; i < nw && !pick; i++) pick = &wins[i];
+  // Like gamescope under Steam control: no match keeps the current focus.
   if (!pick) { XFlush(d); return; }
 
   long app = (long)pick->appid, w = (long)pick->w;
-  XChangeProperty(d, root, a_focused_app, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, 1);
-  XChangeProperty(d, root, a_focused_app_gfx, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, 1);
+  XChangeProperty(d, root, a_focused_app, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, app != 0);
+  XChangeProperty(d, root, a_focused_app_gfx, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, app != 0);
   XChangeProperty(d, root, a_focused_window, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&w, 1);
   Window active = (Window)get_cardinal(root, a_active, 0);
   if (active != pick->w) {
@@ -141,6 +162,7 @@ int main(int argc, char **argv) {
   root = DefaultRootWindow(d);
 #define A(v, s) v = XInternAtom(d, s, False)
   A(a_client_list, "_NET_CLIENT_LIST"); A(a_active, "_NET_ACTIVE_WINDOW"); A(a_steam_game, "STEAM_GAME");
+  A(a_bigpicture, "STEAM_BIGPICTURE"); A(a_overlay, "STEAM_OVERLAY");
   A(a_pid, "_NET_WM_PID"); A(a_base_appid, "GAMESCOPECTRL_BASELAYER_APPID");
   A(a_base_window, "GAMESCOPECTRL_BASELAYER_WINDOW"); A(a_focusable_apps, "GAMESCOPE_FOCUSABLE_APPS");
   A(a_focusable_windows, "GAMESCOPE_FOCUSABLE_WINDOWS"); A(a_focused_app, "GAMESCOPE_FOCUSED_APP");
