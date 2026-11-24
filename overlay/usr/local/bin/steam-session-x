@@ -1,5 +1,8 @@
 #!/bin/bash
 # X session client, run by startx as the steam user: window manager, then Steam.
 xset s off -dpms 2>/dev/null
+# Mirrors SteamOS's gamescope-session (--hide-cursor-delay 3000): the cursor starts hidden, shows when
+# something moves the pointer (Steam's guide + right stick chord), and hides again after 3 s idle.
+unclutter --start-hidden --timeout 3 --jitter 1 &
 openbox &
 exec /usr/local/bin/run-steam.sh

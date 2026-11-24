@@ -119,4 +119,12 @@ change how we work also go into `lessons-learned.md`.
 - `tools/smoke.sh` checks reachability, services, display, GPU, Wi-Fi, audio sink, battery, gamepad
   (and that X ignores it), the Steam route, pad navigation (focus must move) and memory, and saves a
   screenshot.
-- The X cursor showed at boot; SteamOS/gamescope never show one. Xorg now runs with `-nocursor`.
+- Cursor: SteamOS's gamescope-session hides the cursor until pointer motion (`--hide-cursor-delay 3000`);
+  Steam's guide + right stick chord moves a pointer and must still show it. `-nocursor` was wrong; the
+  session runs `unclutter --start-hidden --timeout 3` instead.
+- adbd also dies on host-initiated link drops (USB suspend/reset: `FUNCTIONFS_SUSPEND`, `FUNCTIONFS_DISABLE`),
+  not only unplugs. A udev rule on `axp20x-usb` power events was the wrong tool (charging-state changes fire
+  it too). `usb-gadget` now watches `/sys/class/udc/*/state` and exits (systemd rebuilds the gadget) when the
+  link stays out of `configured` for 3 s after having been up.
+- `session-N.scope` units of earlier Steam sessions show as failed after a session restart; the prep script
+  runs `systemctl reset-failed "session-*.scope"`.

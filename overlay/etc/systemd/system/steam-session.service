@@ -19,7 +19,7 @@ UtmpMode=user
 Environment=XDG_SESSION_TYPE=x11 XDG_SESSION_CLASS=user XDG_SEAT=seat0 XDG_VTNR=7
 ExecStartPre=+/usr/bin/chvt 7
 ExecStartPre=+/usr/local/bin/steam-session-prep
-ExecStart=/usr/bin/startx /usr/local/bin/steam-session-x -- :0 vt7 -keeptty -nolisten tcp -nocursor -s 0 -dpms
+ExecStart=/usr/bin/startx /usr/local/bin/steam-session-x -- :0 vt7 -keeptty -nolisten tcp -s 0 -dpms
 Restart=always
 RestartSec=5
 KillMode=control-group

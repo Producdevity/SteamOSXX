@@ -11,4 +11,6 @@ if [ "${PADMAP:-0}" = 1 ]; then
   pgrep -x padmap >/dev/null || /usr/local/bin/padmap &
 fi
 rm -f /tmp/.X0-lock /tmp/.X11-unix/X0
+# scopes of earlier Steam sessions stay "failed" after a session restart
+systemctl reset-failed "session-*.scope" 2>/dev/null
 true

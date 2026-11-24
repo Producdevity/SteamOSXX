@@ -1,3 +1,0 @@
-# adbd does not re-establish its FunctionFS connection after the cable is unplugged and plugged back;
-# restart the gadget when USB power returns.
-SUBSYSTEM=="power_supply", KERNEL=="axp20x-usb", ACTION=="change", ATTR{online}=="1", RUN+="/usr/bin/systemctl --no-block restart usb-gadget.service"

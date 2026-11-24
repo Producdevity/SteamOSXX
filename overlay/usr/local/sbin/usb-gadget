@@ -34,7 +34,20 @@ start() {
   for i in $(seq 1 50); do [ -e $FFS/ep1 ] && break; sleep 0.2; done
   echo "$udc" > $G/UDC
   echo "usb-gadget: adb on $udc, serial $(cat $G/strings/0x409/serialnumber)"
-  wait
+  # adbd does not recover once the host drops the link (unplug, host suspend or reset: FUNCTIONFS_DISABLE).
+  # When the controller has been configured and then stays out of "configured" for 3 s, exit so systemd
+  # rebuilds the gadget and adbd.
+  seen=0 down=0
+  while kill -0 "$!" 2>/dev/null; do
+    st=$(cat /sys/class/udc/$udc/state 2>/dev/null)
+    if [ "$st" = configured ]; then seen=1 down=0
+    elif [ "$seen" = 1 ]; then
+      down=$((down + 1))
+      [ "$down" -ge 3 ] && { echo "usb-gadget: link left configured ($st), restarting"; exit 1; }
+    fi
+    sleep 1
+  done
+  echo "usb-gadget: adbd exited"; exit 1
 }
 
 stop() {
