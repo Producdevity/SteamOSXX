@@ -70,7 +70,10 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 
 ## 5. GPU / gamescope (long shot)
 - [x] PanVK on Bifrost v7 (Mesa 26.1, `panvk-run`): works for native Vulkan, Vulkan 1.0, cannot run DXVK or gamescope (no robustness2, geometry shaders). Revisit with Mesa 26.3 (Vulkan 1.3 on v7) once packaged. S
-- [ ] gamescope: make `VK_EXT_robustness2` nullDescriptor optional, handle the split display/GPU devices
+- [x] Real gamescope on llvmpipe (2026-11-25): runs with `rootfs/src/vk-fake-drm.c` (`NESTED_GAMESCOPE=1`), but ~90 % of a
+      core, black panel and Steam SIGBUS inside it. TABLED: the Xorg + `sxx-focus` path costs ~0 %. Reopen if a GPU Vulkan
+      path appears; the open questions are the black screen and the SIGBUS (docs/findings.md). L
+- [ ] gamescope on the GPU: make `VK_EXT_robustness2` nullDescriptor optional, handle the split display/GPU devices
       (gamescope #2070), synthesize an EDID for the DSI panel (Armada patches 0002/0003). L, high risk
 - [ ] Until then keep Xorg + openbox (works, low overhead).
 
