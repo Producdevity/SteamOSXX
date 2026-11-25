@@ -32,8 +32,11 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] First-start time measured on the release image (2026-11-25): power-on to the sign-in screen 58 min (Wi-Fi joined
       in 10 s; client download and install ~15 min; Proton download ~20 min at 0.3-0.4 MB/s from GitHub; Steam's own
       update and extraction the rest). Mirror or cache Proton if this matters.
-- [ ] Steam settings JS (`steam-defaults.js`) no longer finds its settings message in the current client
-      ("settings message not found"): screensavers stay on. Find the message class in the new UI bundle.
+- [x] Steam settings JS matches the current client again (the screensaver wallpapers had covered the launch dialog).
+- [x] Release image verified end to end (2026-11-25): QR sign-in, install Geometry Wars, launch under the default
+      ARMv8 Proton, Steam menu over the game and back, quit to Big Picture.
+- [ ] Present the pad as a native Steam Deck controller (28de:1205 over uhid) so Steam drops the "External Controller
+      Translation" dialog and uses Deck glyphs/layouts. `sxx-gametest` should also dismiss Steam's hint dialogs.
 - [ ] Power menu: Restart and Shut down from Steam through the sentinels; test both on hardware.
 - [ ] Wake/sleep is not supported: the power menu must not offer Suspend (or it must do nothing harmful).
 - [ ] Release notes: tested hardware, RAM-timing warning, known issues (slow, D3D10/11), what the setup window does,
