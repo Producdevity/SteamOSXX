@@ -17,6 +17,7 @@ KURL=https://www.kernel.org/pub/linux/kernel/v7.x/linux-$KVER.tar.xz
 ROCKNIX_COMMIT=cefc14339a4ae18c02bb69888f27835e50664b60
 JOYPAD_REPO=https://github.com/hackbar/rocknix-joypad
 JOYPAD_COMMIT=005033d1ddd8746c771f2c81f1174f2d892541c9
+JOYPAD_SHA256=7a9a90d9d25d48384771bf8fe7cfb53bba708b64aa4e56d44e71205a8bcc699a
 FW=$ROOT/cache/overlay/usr/lib/kernel-overlays/base/lib/firmware
 JOBS=${JOBS:-$(nproc)}
 WORK=${KERNEL_WORK:-$ROOT/out/kernel-work}
@@ -96,7 +97,10 @@ make "${MAKE_ARGS[@]}" INSTALL_MOD_PATH="$OUT/modules" modules_install >/dev/nul
 KREL=$(cat include/config/kernel.release)
 
 step "rocknix-joypad (out of tree)"
-rm -rf "$WORK/joypad" && git clone -q "$JOYPAD_REPO" "$WORK/joypad" && git -C "$WORK/joypad" checkout -q "$JOYPAD_COMMIT"
+# ROCKNIX fetches this commit as an archive (it is not on a branch a clone would get) and pins the hash.
+curl -fL -o "$WORK/joypad.tar.gz" "$JOYPAD_REPO/archive/$JOYPAD_COMMIT.tar.gz"
+echo "$JOYPAD_SHA256  $WORK/joypad.tar.gz" | sha256sum -c -
+rm -rf "$WORK/joypad" && mkdir "$WORK/joypad" && tar -xzf "$WORK/joypad.tar.gz" -C "$WORK/joypad" --strip-components=1
 make "${MAKE_ARGS[@]}" -C "$WORK/linux" M="$WORK/joypad" modules >/dev/null
 mkdir -p "$OUT/modules/lib/modules/$KREL/rocknix-joypad"
 find "$WORK/joypad" -name '*.ko' -exec cp {} "$OUT/modules/lib/modules/$KREL/rocknix-joypad/" \;
