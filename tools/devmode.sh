@@ -6,10 +6,10 @@ cd "$(dirname "$0")/.."
 case "${1:-status}" in
   on) tools/dev.sh sh 'ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target;
         ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target;
-        [ -f /etc/systemd/logind.conf.d/10-devmode.conf.off ] && mv /etc/systemd/logind.conf.d/10-devmode.conf.off /etc/systemd/logind.conf.d/10-devmode.conf;
+        mkdir -p /etc/systemd/logind.conf.d; cp /usr/local/share/sxx/devmode/10-devmode.conf /etc/systemd/logind.conf.d/;
         systemctl daemon-reload; echo devmode on' ;;
   off) tools/dev.sh sh 'rm -f /etc/systemd/system/poweroff.target /etc/systemd/system/halt.target;
-        [ -f /etc/systemd/logind.conf.d/10-devmode.conf ] && mv /etc/systemd/logind.conf.d/10-devmode.conf /etc/systemd/logind.conf.d/10-devmode.conf.off;
+        rm -f /etc/systemd/logind.conf.d/10-devmode.conf;
         systemctl daemon-reload; echo devmode off' ;;
   status) tools/dev.sh sh 'readlink /etc/systemd/system/poweroff.target || echo "poweroff is real"; ls /etc/systemd/logind.conf.d/' ;;
 esac

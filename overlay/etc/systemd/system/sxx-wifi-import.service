@@ -1,0 +1,11 @@
+[Unit]
+Description=Join the Wi-Fi network from wifi.txt on the boot partition
+After=NetworkManager.service boot-firmware.mount
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sxx-wifi-import
+
+[Install]
+WantedBy=multi-user.target

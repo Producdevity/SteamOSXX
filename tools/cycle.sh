@@ -24,7 +24,7 @@ wait_steam_ui() {
 
 for stage in "${stages[@]}"; do
   case "$stage" in
-    build)   step "build"; tools/build-rootfs.sh; STEAM_SEED=none tools/build-image.sh ;;
+    build)   step "build"; DEV_MODE=${DEV_MODE:-1} tools/build-rootfs.sh; STEAM_SEED=none tools/build-image.sh ;;
     flash)   step "flash"; tools/reflash-slot2.sh ;;
     restore) step "restore"; tools/restore-steam.sh; step "waiting for Steam"; wait_steam_ui ;;
     test)    step "smoke"; wait_steam_ui; tools/smoke.sh

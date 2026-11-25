@@ -48,6 +48,12 @@ LABEL steamos
   FDT /dtbs/$DTB
   APPEND root=PARTUUID=53544d52-02 rootwait rw init=/lib/systemd/systemd console=ttyS0,115200 console=tty0 panic=10 oops=panic softlockup_panic=1 loglevel=4 fsck.repair=yes
 EOF
+cat > $work/boot/wifi.txt.example <<EOF
+# To join Wi-Fi on first start: copy this file to wifi.txt on this partition and fill it in.
+# The first start downloads Steam (about 1 GB), so the handheld needs a connection.
+ssid=YourNetworkName
+psk=YourPassword
+EOF
 boot_mb=256
 truncate -s ${boot_mb}M $work/boot.img
 mkfs.vfat -F 32 -n STEAMBOOT -i 53544d52 $work/boot.img >/dev/null

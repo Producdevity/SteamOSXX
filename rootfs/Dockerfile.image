@@ -1,6 +1,8 @@
 # The fast layer over the base (rootfs/Dockerfile): the repository's overlay, the C helpers, the SSH key and
 # Wi-Fi profiles from secrets/, and the service wiring. Everything here is cheap even under emulation.
 ARG BASE=steamos-rg40xx-base
+# 1 = dev mode: poweroff/halt become reboot (back to muOS in slot 1) and the power key is ignored. Off for releases.
+ARG DEV_MODE=0
 FROM ${BASE}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY rootfs/src/padmap.c /usr/local/src/padmap.c
@@ -21,9 +23,12 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
  && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-vpad.service \
- && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
- && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-vpad.service sxx-wifi-import.service \
+ && if [ "$DEV_MODE" = 1 ]; then \
+      ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target; \
+      ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target; \
+      mkdir -p /etc/systemd/logind.conf.d && cp /usr/local/share/sxx/devmode/10-devmode.conf /etc/systemd/logind.conf.d/; \
+    fi \
  && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \
  && systemctl set-default multi-user.target \
  && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \

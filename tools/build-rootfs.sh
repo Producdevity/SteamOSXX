@@ -7,6 +7,7 @@
 #   tools/build-rootfs.sh            reuse a local or published base when its hash matches
 #   BASE_PULL=0 tools/build-rootfs.sh   always build the base locally
 #   PUSH_BASE=1 tools/build-rootfs.sh   after building the base, push it (CI on main; needs a ghcr login)
+#   DEV_MODE=1 tools/build-rootfs.sh    development image: poweroff = reboot (to muOS), power key ignored (releases: off)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REGISTRY=${BASE_REGISTRY:-ghcr.io/xxjsonderuloxx/steamos-rg40xx-base}
@@ -34,7 +35,7 @@ else
   fi
 fi
 
-docker build --platform linux/arm64 --build-arg BASE="$local_base" -t steamos-rg40xx-rootfs -f rootfs/Dockerfile.image .
+docker build --platform linux/arm64 --build-arg BASE="$local_base" --build-arg DEV_MODE="${DEV_MODE:-0}" -t steamos-rg40xx-rootfs -f rootfs/Dockerfile.image .
 id=$(docker create --platform linux/arm64 steamos-rg40xx-rootfs)
 trap 'docker rm -f "$id" >/dev/null' EXIT
 docker export "$id" -o out/rootfs.tar

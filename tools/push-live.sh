@@ -62,6 +62,7 @@ dev "set -e
   systemctl daemon-reload
   systemd-tmpfiles --create /etc/tmpfiles.d/*.conf
   systemctl enable --now earlyoom.service >/dev/null 2>&1
+  systemctl enable sxx-wifi-import.service >/dev/null 2>&1
   systemctl restart reach-guard.service earlyoom.service
   if [ -e /swapfile ]; then swapoff /swapfile 2>/dev/null || true; rm -f /swapfile; fi"
 # The session reads these at start; a running Steam keeps the old copies until it restarts.
