@@ -24,6 +24,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] Real poweroff works with dev mode off (2026-11-25); dev mode is a build option (`DEV_MODE=1`), off in CI.
 - [x] Wi-Fi without secrets in the image: `wifi.txt` on the boot partition (`sxx-wifi-import`).
 - [x] CI builds U-Boot, rootfs and image; the rootfs base is published to ghcr.io; tagged builds draft a release.
+- [x] CI release image inspected (2026-11-25): 2.7 GiB, dev mode off, no NetworkManager profiles, no SSH keys, no Steam
+      seed, `wifi.txt.example` on the boot partition, Wi-Fi import service enabled. adb over USB is a root shell
+      (no auth) and SSH accepts only keys: say so in the notes.
 - [ ] Flash the CI-built release image (no SSH key, no Wi-Fi profile, no Steam seed) onto a card and run it from
       power-on to a game without a PC: Wi-Fi from `wifi.txt`, first start, QR sign-in, install and launch a game.
 - [ ] First-start time and footprint: Steam's own 668 MB update plus ~1.4 GB of extraction takes 15-30 min on this
