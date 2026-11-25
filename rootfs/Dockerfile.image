@@ -1,0 +1,28 @@
+# The fast layer over the base (rootfs/Dockerfile): the repository's overlay, the C helpers, the SSH key and
+# Wi-Fi profiles from secrets/, and the service wiring. Everything here is cheap even under emulation.
+ARG BASE=steamos-rg40xx-base
+FROM ${BASE}
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+COPY rootfs/src/padmap.c /usr/local/src/padmap.c
+RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
+COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
+RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+COPY rootfs/src/reach-guard.c /usr/local/src/reach-guard.c
+RUN mkdir -p /usr/local/sbin && gcc -O2 -Wall -o /usr/local/sbin/reach-guard /usr/local/src/reach-guard.c
+
+COPY overlay/ /
+COPY secrets/authorized_keys /root/.ssh/authorized_keys
+COPY secrets/authorized_keys /home/steam/.ssh/authorized_keys
+COPY secrets/nm/ /etc/NetworkManager/system-connections/
+RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.ssh \
+ && find /etc/NetworkManager/system-connections -type f -exec chmod 600 {} + \
+ && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
+ && chmod +x /usr/local/bin/* /usr/local/sbin/* \
+ && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-vpad.service \
+ && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
+ && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
+ && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \
+ && systemctl set-default multi-user.target \
+ && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \
+ && depmod 7.2.0 && udevadm hwdb --update

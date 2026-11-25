@@ -1,4 +1,6 @@
 # Debian trixie arm64 userspace for the RG40XX-H, booted by ROCKNIX's mainline kernel.
+# This is the slow, rarely changing base (packages, Mesa, kernel modules); rootfs/Dockerfile.image adds the
+# repository's overlay, helpers and secrets on top. tools/build-rootfs.sh pulls CI's prebuilt base when its inputs match.
 # Build context is the repository root: docker build --platform linux/arm64 -f rootfs/Dockerfile .
 FROM debian:trixie
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -27,6 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt-get update && apt-get install -y --no-install-recommends avahi-daemon libnss-mdns \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Keep earlier layers byte-identical: the arm64 build runs under emulation here, and a change to the big apt
+# layer re-runs every layer after it (15+ minutes). New packages go in late layers like this one.
+RUN apt-get update && apt-get install -y --no-install-recommends zstd  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Mesa 26.1 from trixie-backports: its PanVK (Vulkan) enumerates the Mali-G31; trixie's 25.0 does not.
 RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n' \
       > /etc/apt/sources.list.d/trixie-backports.sources \
@@ -41,13 +47,6 @@ RUN mkdir -p /usr/local/lib/lse && gcc -shared -fPIC -O2 -march=armv8-a -mno-out
  && strip --strip-unneeded /usr/local/lib/lse/liblse_emu.so \
  && ! objdump -d /usr/local/lib/lse/liblse_emu.so | grep -qE $'\t((ld|st)(add|clr|eor|set|smax|smin|umax|umin)|swp|cas)[a-z]*\t' \
  && cp /usr/local/lib/lse/liblse_emu.so /usr/local/lib/lse/liblse_emu_sys.so
-COPY rootfs/src/padmap.c /usr/local/src/padmap.c
-RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
-COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
-RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
-COPY rootfs/src/reach-guard.c /usr/local/src/reach-guard.c
-RUN mkdir -p /usr/local/sbin && gcc -O2 -Wall -o /usr/local/sbin/reach-guard /usr/local/src/reach-guard.c
-
 # ROCKNIX kernel 7.2.0 modules (joypad, zram, ...) and Wi-Fi/BT firmware.
 COPY cache/overlay/usr/lib/kernel-overlays/base/lib/modules/ /usr/lib/modules/
 COPY cache/overlay/usr/lib/kernel-overlays/base/lib/firmware/ /usr/lib/firmware/
@@ -58,20 +57,3 @@ RUN useradd -m -s /bin/bash -G sudo,video,input,audio,render,netdev steam \
  && passwd -d root && passwd -d steam \
  && rm -f /etc/ssh/ssh_host_* \
  && systemctl disable adbd.service ssh.service 2>/dev/null; true
-
-COPY overlay/ /
-COPY secrets/authorized_keys /root/.ssh/authorized_keys
-COPY secrets/authorized_keys /home/steam/.ssh/authorized_keys
-COPY secrets/nm/ /etc/NetworkManager/system-connections/
-RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.ssh \
- && find /etc/NetworkManager/system-connections -type f -exec chmod 600 {} + \
- && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
- && chmod +x /usr/local/bin/* /usr/local/sbin/* \
- && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-vpad.service \
- && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target \
- && ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/halt.target \
- && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime \
- && systemctl set-default multi-user.target \
- && systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer dpkg-db-backup.timer \
- && depmod 7.2.0 && udevadm hwdb --update

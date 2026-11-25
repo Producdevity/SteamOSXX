@@ -22,13 +22,26 @@ jobs:
 
   rootfs:
     runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+      # Pushes of main publish the base image (tools/build-rootfs.sh tags it by a hash of its inputs), so
+      # local builds and later runs pull it instead of reinstalling every package.
+      - if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: ROCKNIX kernel, modules and firmware
         run: bash tools/fetch-rocknix.sh
       # Release builds carry no SSH key or Wi-Fi profile: adb over USB until the user adds them.
       - run: mkdir -p secrets/nm && touch secrets/authorized_keys
       - run: bash tools/build-rootfs.sh
+        env:
+          PUSH_BASE: ${{ github.event_name != 'pull_request' && '1' || '0' }}
       - uses: actions/upload-artifact@v4
         with:
           name: rootfs
