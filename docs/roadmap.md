@@ -29,8 +29,10 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 ## 2. Games
 - [x] Renderer choice on this GPU (WineD3D on Panfrost via `PROTON_USE_WINED3D=1`; DXVK per game): compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
       on Geometry Wars (FPS, CPU); pick a default. S
-- [~] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
-      `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S
+- [x] sunshineinabox/proton-armv8 (ARMv8.0 Proton 11, no LSE) installs itself: `sxx-install-proton` downloads the
+      pinned release (SHA256 in `/usr/local/share/sxx/proton-armv8.conf`) into `compatibilitytools.d` before
+      Steam's first start, and `sxx-steam-defaults` makes it the global compatibility tool unless one is set.
+      LSE-Emu stays for the client only. Verified on a from-scratch image (2026-11-25).
 - [ ] fex-armv8 for native x86 Linux games. S/M
 - [~] Never livelock on memory: earlyoom (games first), MGLRU `min_ttl_ms`, PSI game kill in the
       memory-locked `reach-guard` (plus a real sshd probe). Verify with a deliberate memory hog. S

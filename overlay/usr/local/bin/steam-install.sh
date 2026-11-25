@@ -15,9 +15,13 @@ awk -F'"' '
   $2 == "sha2" { sha[block] = $4 }
   END { for (b in file) if (b ~ /_all$/ || b ~ /_linuxarm64_linuxarm64$/) print b, file[b], sha[b] }
 ' "$work/manifest" | sort > "$work/parts"
+total=$(wc -l < "$work/parts"); n=0
+echo "@@ 1 Downloading the Steam client"
 while read -r block file sum; do
+  n=$((n + 1))
   [ -f "$work/$file.done" ] && continue
   echo "== $block"
+  echo "@@ $((n * 55 / total)) Downloading the Steam client ($n of $total)"
   curl -fsSL --retry 5 -C - -o "$work/$file" "$cdn/$file" || curl -fsSL --retry 5 -o "$work/$file" "$cdn/$file"
   echo "$sum  $work/$file" | sha256sum -c --quiet
   unzip -qo "$work/$file" -d "$root"

@@ -3,9 +3,17 @@
 . /etc/steam-session.conf
 root=$HOME/.local/share/Steam
 log=$HOME/steam-run.log
-if [ ! -x "$root/steamrtarm64/steam" ]; then
-  until curl -fsI --max-time 10 https://client-update.steamstatic.com/ -o /dev/null || [ $? = 22 ]; do sleep 5; done
-  /usr/local/bin/steam-install.sh >>"$log" 2>&1 || exit 1
+. /usr/local/share/sxx/setup-ui.sh
+if [ ! -x "$root/steamrtarm64/steam" ] || [ ! -f "$root/compatibilitytools.d/$(. /usr/local/share/sxx/proton-armv8.conf; echo "$PROTON_NAME")/proton" ]; then
+  setup_ui_start "Setting up SteamOSXX"
+  if [ ! -x "$root/steamrtarm64/steam" ]; then
+    setup_ui 0 "Waiting for the internet connection..."
+    until curl -fsI --max-time 10 https://client-update.steamstatic.com/ -o /dev/null || [ $? = 22 ]; do sleep 5; done
+    setup_ui_run /usr/local/bin/steam-install.sh || { setup_ui_end; exit 1; }
+  fi
+  setup_ui_run /usr/local/bin/sxx-install-proton || echo "== proton-armv8 install failed" >>"$log"
+  setup_ui 100 "Starting Steam..."
+  setup_ui_end
 fi
 export STEAM_RUNTIME=1 STEAM_STEAMRT_RECURSION_GUARD=1
 export LD_LIBRARY_PATH=$root/steamrtarm64:$root/steamrtarm64/panorama

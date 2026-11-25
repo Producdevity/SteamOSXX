@@ -5,4 +5,11 @@ for i in $(seq 1 120); do
   sxx eval 'location.pathname' 2>/dev/null | grep -q '/library' && break
   sleep 5
 done
+# Default compatibility tool for every game, unless one was chosen (config.vdf CompatToolMapping "0").
+. /usr/local/share/sxx/proton-armv8.conf
+has_default=$(awk '/"CompatToolMapping"/ {m=1; next} m && /\{/ {d++} m && /\}/ {d--; if (d <= 0) exit}
+  m && d == 1 && /^[ 	]*"0"[ 	]*$/ {print "yes"}' "$HOME/.local/share/Steam/config/config.vdf" 2>/dev/null)
+if [ -z "$has_default" ] && [ -f "$HOME/.local/share/Steam/compatibilitytools.d/$PROTON_NAME/proton" ]; then
+  sxx eval "SteamClient.Settings.SpecifyGlobalCompatTool('$PROTON_NAME')" >/dev/null 2>&1 && echo "sxx-steam-defaults: default compatibility tool $PROTON_NAME"
+fi
 sxx eval "$(cat /usr/local/share/sxx/steam-defaults.js)" 2>&1 | tail -1 | sed 's/^/sxx-steam-defaults: /'
