@@ -15,7 +15,7 @@ Q_ROUTE='document.location.pathname'
 Q_FOCUS='(()=>{const e=document.activeElement;return (e&&(e.innerText||e.getAttribute("aria-label")||"")||"").toString().slice(0,60).replace(/\n/g," ")})()'
 
 check reachability   'echo up $(uptime -p)' 'up'
-check services       'systemctl is-active usb-gadget ssh NetworkManager steam-session reach-guard handheld-keys sxx-vpad | sort | uniq -c' '^ *7 active$'
+check services       'systemctl is-active usb-gadget ssh NetworkManager steam-session reach-guard earlyoom handheld-keys sxx-vpad | sort | uniq -c' '^ *8 active$'
 check failed-units   'systemctl --failed --no-legend | wc -l' '^0$'
 check display        'cat /sys/class/drm/card1-DSI-1/status' 'connected'
 check gpu            'runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority glxinfo -B | grep "OpenGL renderer"' 'Panfrost'
@@ -25,6 +25,9 @@ check battery        'upower -i /org/freedesktop/UPower/devices/battery_battery 
 check gamepad        'grep -c "H700 Gamepad" /proc/bus/input/devices' '[1-9]'
 check pad-not-in-x   'udevadm info /dev/input/by-path/*joypad*event* 2>/dev/null | grep -c LIBINPUT_IGNORE_DEVICE=1 || udevadm info -q property -n $(grep -l "H700 Gamepad" /sys/class/input/event*/device/name | sed "s|/sys/class/input/||;s|/device/name||;s|^|/dev/input/|") | grep -c LIBINPUT_IGNORE_DEVICE=1' '^1$'
 check steam-ui       "sxx eval '$Q_ROUTE'" '^/routes/'
+check gamescope-mode "sxx eval 'String(!SteamUIStore.WindowStore.GamepadUIMainWindowInstance.BUseSeparateOverlayWindows())'" '^true$'
+check focus-daemon   'pgrep -x sxx-focus >/dev/null && runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority xprop -root GAMESCOPE_FOCUSABLE_APPS' '769'
+check memory-guards  'systemctl is-active earlyoom reach-guard | sort -u; cat /sys/kernel/mm/lru_gen/min_ttl_ms' '^1000$'
 before=$(tools/dev.sh sh "sxx eval -t 'Steam Big Picture Mode' '$Q_FOCUS'" 2>&1)
 tools/dev.sh sh 'sxx pad down wait:600' >/dev/null 2>&1
 after=$(tools/dev.sh sh "sxx eval -t 'Steam Big Picture Mode' '$Q_FOCUS'" 2>&1)

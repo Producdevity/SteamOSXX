@@ -1,0 +1,48 @@
+#!/bin/sh
+# End-to-end game check, as the steam user: launch from Steam, wait until Steam hands the game the base layer
+# and it is focused, open the Steam menu in game, return, quit. Prints timings; screenshots go to
+# /tmp/sxx-gametest-<appid>-<step>.xwd.
+#   sxx-gametest <appid> [launch-timeout-s]
+app=${1:?appid}; limit=${2:-300}
+export DISPLAY=${DISPLAY:-:0} XAUTHORITY=${XAUTHORITY:-$HOME/.Xauthority}
+t0=$(date +%s)
+el() { echo "$(( $(date +%s) - t0 ))s"; }
+shot() { xwd -root -silent > "/tmp/sxx-gametest-$app-$1.xwd" 2>/dev/null; }
+base() { xprop -root GAMESCOPECTRL_BASELAYER_APPID | sed 's/.*= //'; }
+steam_win() { xprop -root GAMESCOPE_FOCUSABLE_WINDOWS | sed 's/.*= //' | tr -d ' ' | tr , '\n' | paste - - - | awk -F'\t' '$2 == 769 {print $1; exit}'; }
+fail() { echo "FAIL $*"; shot fail; exit 1; }
+# RunGame on a game that is already running opens Steam's in-game menu instead: quit it first.
+if pgrep -u "$(id -u)" -f "reaper SteamLaunch AppId=$app " >/dev/null; then
+  sxx eval "SteamClient.Apps.TerminateApp(\"$app\", false)" >/dev/null
+  for i in $(seq 1 60); do pgrep -u "$(id -u)" -f "reaper SteamLaunch AppId=$app " >/dev/null || break; sleep 2; done
+  sleep 5
+fi
+t0=$(date +%s)
+sxx eval "SteamClient.Apps.RunGame(\"$app\",\"\",-1,100)" >/dev/null || fail "RunGame"
+echo "launched"
+focused_game() { a=$(xprop -root _NET_ACTIVE_WINDOW | sed 's/.*# //'); xprop -id "$a" WM_CLASS 2>/dev/null | grep -q "steam_app_$app"; }
+until base | grep -qE "^(413091, )?$app," && focused_game; do
+  [ $(( $(date +%s) - t0 )) -gt "$limit" ] && fail "game never came to the front (base $(base))"
+  sleep 2
+done
+echo "PASS game in front (base layer + focus) after $(el)"
+sleep 3; shot game
+sw=$(steam_win)
+sxx pad hold:guide:300
+until [ "$(xprop -id "$sw" STEAM_OVERLAY 2>/dev/null | sed 's/.*= //')" = 1 ]; do
+  [ $(( $(date +%s) - t0 )) -gt $((limit + 120)) ] && fail "Steam menu never opened"
+  sleep 1
+done
+echo "PASS Steam menu over the game after $(el)"; sleep 3; shot menu
+sxx pad hold:b:300
+until [ "$(xprop -id "$sw" STEAM_OVERLAY 2>/dev/null | sed 's/.*= //')" = 0 ]; do
+  [ $(( $(date +%s) - t0 )) -gt $((limit + 240)) ] && fail "Steam menu never closed"
+  sleep 1
+done
+echo "PASS back in game after $(el)"
+sxx eval "SteamClient.Apps.TerminateApp(\"$app\", false)" >/dev/null
+until base | grep -qE "^(413091, )?769$"; do
+  [ $(( $(date +%s) - t0 )) -gt $((limit + 360)) ] && fail "Steam did not take the screen back ($(base))"
+  sleep 2
+done
+echo "PASS quit, Big Picture back after $(el)"

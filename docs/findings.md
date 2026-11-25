@@ -257,3 +257,7 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - The Steam menu takes 10-20 s to appear in game: the web helper's memory sits compressed in zram while it
   is hidden. Memory census in game (`sxx-mem`, PSS + swap): Geometry Wars 441 MB, web helper 388 MB,
   Steam client 123 MB, Xorg 39 MB, Wine services ~90 MB. zram held 700 MB in 173 MB.
+- `sxx-gametest <appid>` runs the whole flow on the device. Geometry Wars: in front 88 s after launch,
+  Steam menu +7 s, back in game +5 s, quit and Big Picture back +4 s. A second `RunGame` while the game runs
+  leaves a "Game already running" dialog that holds Steam in Overlay composition (the test quits a running
+  copy first).
