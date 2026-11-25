@@ -305,3 +305,16 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   not logs or shader caches) to `cache/steam-backup.tar` (10.9 GB): tar on the device, pulled over adb at
   ~17 MB/s. Streaming it over SSH (Wi-Fi) ran at ~150 KB/s, and an adb shell pipe corrupts binary data.
   `tools/restore-steam.sh` puts it back; `STEAM_SEED=cache/steam-backup.tar tools/build-image.sh` bakes it in.
+
+### Reflash from scratch, and moving 11 GB onto the device (2026-11-24)
+- `tools/build-rootfs.sh` + `tools/build-image.sh` (lean, no Steam seed: 2.7 GiB) + `tools/reflash-slot2.sh`
+  (muOS copies the gzipped image, `dd` to `/dev/mmcblk1`, FEL boot) produced a working system on the first
+  try: first boot grew root to 117 GB, Wi-Fi joined, adb up 15 s after U-Boot, Mesa 26.1.6, earlyoom and
+  reach-guard active, a fresh Steam bootstrap started by itself. Total ~6 min after the image existed
+  (gzip 14 s, adb push 558 MB 157 s, dd 173 s).
+- `adb push` of a multi-GB file does not work on this device: the Debian adbd buffers it (800 MB swapped,
+  OOM killer took pipewire and wireplumber) and the transfer died at 4 GB. 558 MB is fine. Large transfers go
+  through a raw TCP stream over `adb forward` into `tar -x` (`tools/restore-steam.sh`): constant memory,
+  ~7 MB/s, limited by SD writes. Pulling a large file with `adb pull` is fine (17 MB/s).
+- Gotcha: `pkill -f <pattern>` inside an ssh/adb command line kills the shell running it (the pattern is in
+  its own command line). Use exact names (`pkill -x`) or `pgrep` into a variable first.
