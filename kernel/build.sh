@@ -80,7 +80,7 @@ scripts/config --set-str CONFIG_EXTRA_FIRMWARE_DIR external-firmware
 scripts/config --set-str CONFIG_DEFAULT_HOSTNAME rg40xx
 # the additions this directory exists for
 scripts/config -e CONFIG_HIDRAW -m CONFIG_UHID -m CONFIG_HID_STEAM -m CONFIG_USBIP_CORE -m CONFIG_USBIP_VHCI_HCD
-yes "" | make "${MAKE_ARGS[@]}" olddefconfig >/dev/null
+make "${MAKE_ARGS[@]}" olddefconfig </dev/null >/dev/null
 for opt in HIDRAW UHID HID_STEAM USBIP_CORE USBIP_VHCI_HCD; do grep -E "^CONFIG_$opt=" .config || { echo "CONFIG_$opt did not stick"; exit 1; }; done
 cp .config "$OUT/config"
 
