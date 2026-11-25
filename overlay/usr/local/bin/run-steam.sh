@@ -58,12 +58,20 @@ cef=(-cef-disable-gpu -cef-disable-gpu-compositing)
 [ -n "${CDP_PORT:-}" ] && cef+=(-cef-enable-debugging -devtools-port "$CDP_PORT")
 cd "$root"
 while :; do
-  /usr/local/bin/patch-webhelper.py >>"$log" 2>&1
+  # Steam re-extracts the whole client when its post-crash checksum pass finds the patched steamwebhelper.sh, so
+  # start it stock and patch once the updater has finished verifying, before the client launches the web helper.
+  /usr/local/bin/patch-webhelper.py --restore >>"$log" 2>&1
+  bootstrap=$root/logs/bootstrap_log.txt
+  offset=$(stat -c %s "$bootstrap" 2>/dev/null || echo 0)
+  ( tail -c +$((offset + 1)) -F "$bootstrap" 2>/dev/null | grep -a --line-buffered -E 'Verification complete|Update complete, launching' |
+      while read -r _; do /usr/local/bin/patch-webhelper.py >>"$log" 2>&1; done ) &
+  patcher=$!
   echo "== $(date -u +%FT%TZ) starting steam ${ui[*]} ${cef[*]} ${STEAM_EXTRA_ARGS:-}" >>"$log"
   [ -n "${CDP_PORT:-}" ] && /usr/local/bin/sxx-steam-defaults >>"$log" 2>&1 &
   "$root/steamrtarm64/steam" -clientbeta "$(cat "$root/package/beta")" "${ui[@]}" \
     -no-cef-sandbox -cef-ozone-platform=x11 "${cef[@]}" ${STEAM_EXTRA_ARGS:-} >>"$log" 2>&1
   rc=$?
+  pkill -P "$patcher" 2>/dev/null; kill "$patcher" 2>/dev/null
   echo "== $(date -u +%FT%TZ) steam exited rc=$rc" >>"$log"
   [ "$rc" = 42 ] || break
 done

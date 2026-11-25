@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -75,8 +76,21 @@ int vkCreateDevice(void *phys, const DeviceCreateInfo *ci, const void *alloc, vo
   DeviceCreateInfo copy = *ci;
   const char **names = calloc(ci->enabledExtensionCount + 1, sizeof *names);
   uint32_t n = 0;
-  for (uint32_t i = 0; i < ci->enabledExtensionCount; i++)
-    if (strcmp(ci->ppEnabledExtensionNames[i], DRM_EXT)) names[n++] = ci->ppEnabledExtensionNames[i];
+  // Drop what the device lacks: gamescope's presentation backends ask for present_id/present_wait/hdr_metadata
+  // outright, and llvmpipe fails the whole vkCreateDevice with VK_ERROR_EXTENSION_NOT_PRESENT.
+  int (*enumerate)(void *, const char *, uint32_t *, ExtProps *) = real("vkEnumerateDeviceExtensionProperties");
+  uint32_t have_n = 0;
+  enumerate(phys, NULL, &have_n, NULL);
+  ExtProps *have = calloc(have_n + 1, sizeof *have);
+  enumerate(phys, NULL, &have_n, have);
+  for (uint32_t i = 0; i < ci->enabledExtensionCount; i++) {
+    const char *want = ci->ppEnabledExtensionNames[i];
+    int found = 0;
+    for (uint32_t j = 0; j < have_n && !found; j++) found = !strcmp(have[j].extensionName, want);
+    if (found) names[n++] = want;
+    else if (getenv("SXX_VK_DEBUG")) fprintf(stderr, "vk-fake-drm: dropping %s\n", want);
+  }
+  free(have);
   copy.enabledExtensionCount = n;
   copy.ppEnabledExtensionNames = names;
   int r = fn(phys, &copy, alloc, dev);

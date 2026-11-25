@@ -1,21 +1,33 @@
 #!/usr/bin/env python3
 """Rewrites Valve's steamwebhelper.sh for this device, keeping its byte size.
 
-The client's startup verification only compares file sizes, so a same-size
-rewrite survives restarts; a client update replaces it and this runs again.
 - drops `taskset 0x7c` (Steam Deck cores 2-6; leaves 2 of 4 cores here)
 - adds --disable-hang-monitor (renderers on an A53 with software raster are
   slow enough that Steam kills them as unresponsive)
+Steam checks executable checksums after an unclean shutdown and re-extracts the whole client when this file
+differs, so run-steam.sh restores the stock file before Steam starts (--restore) and patches again once the
+updater's verification is done, just before the client launches the web helper.
 """
 import os
 import sys
 
-path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+path = args[0] if args else os.path.expanduser(
     "~/.local/share/Steam/steamrtarm64/steamwebhelper.sh")
 marker = b"--disable-hang-monitor"
+stock = os.path.expanduser("~/.cache/sxx/steamwebhelper.sh.stock")
 orig = open(path, "rb").read()
+if "--restore" in sys.argv:
+    if marker in orig and os.path.exists(stock):
+        mode = os.stat(path).st_mode
+        open(path, "wb").write(open(stock, "rb").read())
+        os.chmod(path, mode)
+        print("patch-webhelper: restored", path)
+    sys.exit(0)
 if marker in orig:
     sys.exit(0)
+os.makedirs(os.path.dirname(stock), exist_ok=True)
+open(stock, "wb").write(orig)
 extra = os.environ.get("WEBHELPER_EXTRA_ARGS", "").encode()
 new = (b'#!/bin/bash\n'
        b'cd "$(dirname -- "${BASH_SOURCE[0]}")"\n'

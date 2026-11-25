@@ -1,0 +1,89 @@
+#!/usr/bin/python3
+"""Keeps the ARMv8.0 Proton as every game's compatibility tool.
+
+Steam gives a game its own mapping (config.vdf CompatToolMapping, priority 250) with Valve's pick for it the
+moment it installs, and that mapping beats the global default (entry "0"). Valve's Proton uses LSE atomics, which the
+Cortex-A53 lacks, so a game left on it dies. This watches the mapping while Steam runs and moves every app that
+Steam just pointed at a Valve Proton to ours, once per app: a tool chosen by hand later is left alone.
+Started by sxx-steam-defaults (needs the DevTools port, see /usr/local/bin/sxx).
+"""
+import json
+import os
+import re
+import subprocess
+import time
+
+HOME = os.path.expanduser("~")
+STEAM = os.path.join(HOME, ".local/share/Steam")
+CONFIG = os.path.join(STEAM, "config/config.vdf")
+STATE = os.path.join(HOME, ".config/sxx/compat-handled.json")
+
+
+def ours():
+    for line in open("/usr/local/share/sxx/proton-armv8.conf"):
+        if line.startswith("PROTON_NAME="):
+            return line.split("=", 1)[1].strip()
+    return None
+
+
+def is_valve_proton(name):
+    """Valve's Proton registers as proton-experimental, proton-stable, proton_11 ...; user-installed builds (GE-,
+    DroidDeck-, ours) live in compatibilitytools.d and are never touched."""
+    return (bool(re.match(r"(?i)^proton([-_.]|$)", name)) and "armv8" not in name
+            and not os.path.isdir(os.path.join(STEAM, "compatibilitytools.d", name)))
+
+
+def read_mapping(text):
+    """{app: tool} from CompatToolMapping, however Steam indents it."""
+    start = text.find('"CompatToolMapping"')
+    if start < 0:
+        return {}
+    depth, i, out, app = 0, text.find("{", start), {}, None
+    begin = i
+    while i < len(text):
+        c = text[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        i += 1
+    body = text[begin + 1:i]
+    for m in re.finditer(r'"(\d+)"\s*\{[^{}]*?"name"\s*"([^"]*)"', body):
+        out[m.group(1)] = m.group(2)
+    return out
+
+
+def sxx(js):
+    return subprocess.run(["sxx", "eval", js], capture_output=True, text=True, timeout=30)
+
+
+def main():
+    mine = ours()
+    if not mine:
+        return
+    try:
+        handled = set(json.load(open(STATE)))
+    except (OSError, ValueError):
+        handled = set()
+    while True:
+        try:
+            mapping = read_mapping(open(CONFIG, encoding="utf-8", errors="replace").read())
+            todo = [a for a, t in mapping.items() if a not in handled and is_valve_proton(t)]
+            for app in todo:
+                call = "SteamClient.Settings.SpecifyGlobalCompatTool('%s')" % mine if app == "0" else \
+                    "SteamClient.Apps.SpecifyCompatTool(%s,'%s')" % (app, mine)
+                if sxx(call).returncode == 0:
+                    handled.add(app)
+                    print("sxx-compat-default: app %s moved from %s to %s" % (app, mapping[app], mine), flush=True)
+            if todo:
+                os.makedirs(os.path.dirname(STATE), exist_ok=True)
+                json.dump(sorted(handled), open(STATE, "w"))
+        except Exception as e:  # Steam restarting: DevTools down or the file mid-write
+            print("sxx-compat-default:", e, flush=True)
+        time.sleep(10)
+
+
+if __name__ == "__main__":
+    main()

@@ -7,6 +7,8 @@ COPY rootfs/src/padmap.c /usr/local/src/padmap.c
 RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
 COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
 RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+COPY rootfs/src/vk-fake-drm.c /usr/local/src/vk-fake-drm.c
+RUN mkdir -p /usr/local/lib/sxx && gcc -O2 -Wall -shared -fPIC -o /usr/local/lib/sxx/vk-fake-drm.so /usr/local/src/vk-fake-drm.c -ldl
 COPY rootfs/src/reach-guard.c /usr/local/src/reach-guard.c
 RUN mkdir -p /usr/local/sbin && gcc -O2 -Wall -o /usr/local/sbin/reach-guard /usr/local/src/reach-guard.c
 

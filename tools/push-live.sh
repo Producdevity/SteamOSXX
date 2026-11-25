@@ -37,6 +37,12 @@ local_sums=$(cd overlay && find . -type f ! -name .keep -print0 | sort -z | xarg
 remote_sums=$(echo "$local_sums" | awk '{print $2}' | dev 'xargs sha256sum 2>/dev/null' || true)
 changed=$(join -v1 -1 2 -2 2 <(echo "$local_sums" | sort -k2) <(echo "$remote_sums" | sort -k2) | awk '{print $1}'; \
           join -1 2 -2 2 <(echo "$local_sums" | sort -k2) <(echo "$remote_sums" | sort -k2) | awk '$2 != $3 {print $1}')
+# /etc/steam-session.conf holds per-device switches (STEAMOS, NESTED_GAMESCOPE ...) that get edited on the device;
+# a push would reset them. FORCE_CONF=1 overwrites it.
+if [ "${FORCE_CONF:-0}" != 1 ] && echo "$changed" | grep -qx /etc/steam-session.conf; then
+  echo "push-live: keeping the device's /etc/steam-session.conf (FORCE_CONF=1 to overwrite)"
+  changed=$(echo "$changed" | grep -vx /etc/steam-session.conf || true)
+fi
 if [ -n "$changed" ]; then
   echo "push-live: $(echo "$changed" | wc -l) overlay file(s) changed"; echo "$changed" | sed 's/^/  /'
   echo "$changed" | sed 's|^/||' | tar -C overlay -cf - -T - | dev 'tar -xf - -C / --no-same-owner --no-overwrite-dir'
@@ -48,6 +54,7 @@ dev "set -e
   missing=\$(for p in $pkgs; do dpkg -s \$p >/dev/null 2>&1 || echo \$p; done)
   [ -z \"\$missing\" ] || { echo \"push-live: installing \$missing\"; apt-get update -qq && apt-get install -y -qq --no-install-recommends -o Dpkg::Options::=--force-confold \$missing; }
   gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
+  mkdir -p /usr/local/lib/sxx && gcc -O2 -Wall -shared -fPIC -o /usr/local/lib/sxx/vk-fake-drm.so /usr/local/src/vk-fake-drm.c -ldl
   gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
   gcc -O2 -Wall -o /usr/local/sbin/reach-guard.new /usr/local/src/reach-guard.c && mv -f /usr/local/sbin/reach-guard.new /usr/local/sbin/reach-guard
   chmod +x /usr/local/bin/* /usr/local/sbin/*

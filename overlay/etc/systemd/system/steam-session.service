@@ -25,6 +25,8 @@ ExecStart=/usr/bin/setpriv --ambient-caps -all --inh-caps -all -- /usr/bin/start
 Restart=always
 RestartSec=5
 KillMode=control-group
+# Steam takes minutes to wind down on this CPU; after 20 s the session is killed rather than stalling a restart.
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target
