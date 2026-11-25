@@ -29,8 +29,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
       (no auth) and SSH accepts only keys: say so in the notes.
 - [ ] Flash the CI-built release image (no SSH key, no Wi-Fi profile, no Steam seed) onto a card and run it from
       power-on to a game without a PC: Wi-Fi from `wifi.txt`, first start, QR sign-in, install and launch a game.
-- [ ] First-start time and footprint: Steam's own 668 MB update plus ~1.4 GB of extraction takes 15-30 min on this
-      CPU; measure it on the release image and say so in the notes.
+- [x] First-start time measured on the release image (2026-11-25): power-on to the sign-in screen 58 min (Wi-Fi joined
+      in 10 s; client download and install ~15 min; Proton download ~20 min at 0.3-0.4 MB/s from GitHub; Steam's own
+      update and extraction the rest). Mirror or cache Proton if this matters.
 - [ ] Steam settings JS (`steam-defaults.js`) no longer finds its settings message in the current client
       ("settings message not found"): screensavers stay on. Find the message class in the new UI bundle.
 - [ ] Power menu: Restart and Shut down from Steam through the sentinels; test both on hardware.

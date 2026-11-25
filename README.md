@@ -56,7 +56,7 @@ Tested on one RG40XX-H (LPDDR4). Other units may need different RAM timings (see
 3. Wi-Fi: on the card's small `STEAMBOOT` partition copy `wifi.txt.example` to `wifi.txt` and fill in `ssid=` and
    `psk=`. The first start downloads about 1 GB (Valve's Steam client and a Proton build for this CPU).
 4. Put the card in **slot 1** (TF1, the boot slot) and power on. The first start grows the root partition to the
-   card, then shows a "Setting up SteamOSXX" progress window and Steam's own update screen: allow 15-30 minutes.
+   card, then shows a "Setting up SteamOSXX" progress window and Steam's own update screen: allow up to an hour (about 58 minutes on a home connection in the first test).
 5. Sign in to Steam with the QR code. Games that need Proton use the ARMv8.0 build automatically.
 
 If the card does not boot, U-Boot shows it to a connected PC as a USB drive so it can be rewritten. Hold the power
