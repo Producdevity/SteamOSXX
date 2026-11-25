@@ -330,5 +330,34 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   glxgears (Panfrost GL through gamescope's Xwayland) holds 30 FPS at `-r 30`, with gamescope at ~85 % of one
   core compositing 640x480 on llvmpipe (the Steam login QR page was using 170 % at the same time).
 - gamescope also needs `/usr/games` on PATH (`gamescopereaper`).
-- Not tried yet: `--backend sdl` nested in Xorg, Steam inside it, a game inside it. The DRM backend is unlikely to
-  work: llvmpipe's exportable buffers are not physically contiguous and the H700 display engine has no IOMMU.
+- `--backend sdl` nested in Xorg needs two more fixes in the shim: it asks for `VK_KHR_present_id`,
+  `VK_KHR_present_wait` and `VK_EXT_hdr_metadata`, which llvmpipe lacks and which fail `vkCreateDevice` with
+  `VK_ERROR_EXTENSION_NOT_PRESENT`, so the shim drops every requested extension the device does not list. After
+  that gamescope opens its window, swapchain and Xwayland, and `NESTED_GAMESCOPE=1` in `/etc/steam-session.conf`
+  runs Steam inside it.
+- Result with Steam inside it (2026-11-25): not usable here. The panel stays black while gamescope sits at ~90 % of
+  a core (200-500 MB resident, swap climbing on 1 GB of RAM), even with nothing to composite, and Steam
+  crashes with SIGBUS (exit 135) about every 90 s. The switch stays in the tree, off by default, for revisiting
+  with a GPU Vulkan driver. The DRM backend cannot work: llvmpipe's exportable buffers are not physically
+  contiguous and the H700 display engine has no IOMMU.
+
+### Steam re-extracted its whole client on every start (2026-11-25)
+- After an unclean shutdown Steam's updater runs "Verifying all executable checksums" instead of "file sizes only".
+  `steamrtarm64/steamwebhelper.sh` is patched on every start (no `taskset 0x7c`, `--disable-hang-monitor`) and
+  fails that CRC check, so Steam downloaded the manifest, called the package "uninstalled" and re-extracted ~1.4 GB
+  (4-5 minutes, then the same again on the next start). Restarting a session through systemd (the 90 s stop timeout
+  kills Steam) triggers it every time.
+- Fix: `run-steam.sh` restores the stock file (`patch-webhelper.py --restore`, from `~/.cache/sxx`) before Steam
+  starts and patches it again when the updater logs "Verification complete" / "Update complete", before the client
+  launches the web helper. A restart after an unclean stop now verifies for ~3 min and does not extract.
+- `steam-session.service` has `TimeoutStopSec=20`: Steam needs minutes to exit here and the 90 s default only delayed
+  the kill.
+
+### First-install Proton default (2026-11-25)
+- The global default (`CompatToolMapping` entry "0") is not enough: when a game installs, Steam writes that game's own
+  mapping to Valve's pick, which wins, and Valve's Proton uses LSE atomics (dies on the A53). `sxx-compat-default`
+  (started by `sxx-steam-defaults`) watches config.vdf and moves any app Steam points at a Valve Proton to the ARMv8
+  build through `SteamClient.Apps.SpecifyCompatTool`, once per app (`~/.config/sxx/compat-handled.json`), so a tool
+  chosen by hand afterwards sticks. Verified: Geometry Wars set to `proton-experimental` is back on
+  `proton-armv8-proton-11.0-3` within 10 s. DroidDeck's `steam-compatibility` does the same job by rewriting
+  config.vdf while Steam is stopped (its `valve_picks` and `plan_mapping`).
