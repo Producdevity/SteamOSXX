@@ -223,3 +223,30 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   `GAMESCOPE_FOCUSED_APP`, `_APP_GFX` and `_WINDOW` on the root. 413091 does not appear in its source.
 - `sxx-focus` does the same on Xorg, using `_NET_WM_PID` and activating the chosen window through openbox
   (`_NET_ACTIVE_WINDOW` with the pager source, so focus-stealing prevention does not apply).
+
+### Games in front of Big Picture, the SteamOS way (2026-11-24)
+- Steam's UI only runs its gamescope logic when `IN_GAMESCOPE` is true, which the client derives from
+  `GAMESCOPE_WAYLAND_DISPLAY`. Without it the UI never hides itself for a game and keeps
+  `GAMESCOPECTRL_BASELAYER_APPID` at `[413091, 769]`. The session now sets
+  `GAMESCOPE_WAYLAND_DISPLAY=gamescope-0` (`GAMESCOPE_COMPAT=1` in `steam-session.conf`). Nothing listens
+  on that socket, and Steam starts and runs normally.
+- With it, Steam builds the queue itself (sp.js `EnsureCorrectComposition`): Opaque gives `[769, game]`,
+  otherwise `[game, 769]`, and the webhelper prefixes 413091. On launch the queue went
+  `[413091, 769, 8400]` -> `[413091, 8400, 769]` once the game window was focusable, and `sxx-focus` put the
+  game in front with nothing pressed.
+- The webhelper turns the UI composition mode (`SteamClient.Window.SetComposition(mode, appids, window)`)
+  into `STEAM_OVERLAY`, `STEAM_NOTIFICATION`, `STEAM_INPUT_FOCUS` on its window and the base-layer root
+  properties.
+- Wine minimizes a fullscreen game that loses focus, and Geometry Wars stops (0 CPU) while minimized, so
+  `sxx-focus` treats iconified clients as focusable (gamescope never iconifies).
+- Steam's screensaver (a slideshow of the account's screenshots, `system_idle_screensaver_ac_sec=300`,
+  `screensaver_while_ingame=true`) started during the slow launch. Its popup requests Opaque composition and
+  pinned Big Picture over the game. Turned off through the client settings protobuf
+  (`SteamClient.Settings.SetSetting`, see `sxx-steam-defaults`).
+- Hidden this way, the web helper uses about 4 % of one core behind a game (it was 70-85 % while Big Picture
+  kept rendering on top). `game-mode` (SCHED_IDLE web helper) is removed: it starved the Steam button
+  in game, and SteamOS has nothing like it.
+- Memory: zstd zram compresses Steam's memory about 3.5:1, so zram's 975 MB disk size, not RAM, was what ran
+  out. Now zram = 2x RAM, `vm.swappiness=180`, `page-cluster=0`, `watermark_boost_factor=0`,
+  `watermark_scale_factor=125`. `PROTON_USE_XALIA=0` (xalia took ~14 % CPU per game).
+- Geometry Wars main menu on proton-armv8 11.0-3 (ARMv8.0 build, no LSE traps): 1.4-3.8 FPS.

@@ -5,6 +5,7 @@
 // activates the window of the first app in Steam's base-layer list through the window manager.
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,7 @@
 
 static Display *d;
 static Window root;
-static Atom a_client_list, a_active, a_steam_game, a_bigpicture, a_overlay, a_pid, a_base_appid, a_base_window,
+static Atom a_client_list, a_active, a_steam_game, a_bigpicture, a_overlay, a_wm_state, a_pid, a_base_appid, a_base_window,
     a_focusable_apps, a_focusable_windows, a_focused_app, a_focused_app_gfx, a_focused_window;
 static int verbose;
 
@@ -32,7 +33,7 @@ static long *get_cardinals(Window w, Atom prop, Atom type, unsigned long *n) {
 }
 
 static unsigned long get_cardinal(Window w, Atom prop, unsigned long dflt) {
-  unsigned long n; long *v = get_cardinals(w, prop, XA_CARDINAL, &n);
+  unsigned long n; long *v = get_cardinals(w, prop, AnyPropertyType, &n);
   unsigned long r = n ? (unsigned long)v[0] : dflt;
   if (v) XFree(v);
   return r;
@@ -102,7 +103,10 @@ static void sync_focus(void) {
   for (unsigned long i = 0; i < n && nw < MAXW; i++) {
     Window w = (Window)clients[i];
     XWindowAttributes wa;
-    if (!XGetWindowAttributes(d, w, &wa) || wa.map_state != IsViewable || wa.class == InputOnly ||
+    // Wine minimizes a fullscreen game that loses focus; gamescope never iconifies, so a minimized client
+    // stays focusable here and activating it restores it.
+    int iconic = get_cardinal(w, a_wm_state, 0) == IconicState;
+    if (!XGetWindowAttributes(d, w, &wa) || (wa.map_state != IsViewable && !iconic) || wa.class == InputOnly ||
         (wa.width <= 1 && wa.height <= 1) || get_cardinal(w, a_overlay, 0))
       continue;
     unsigned long pid = get_cardinal(w, a_pid, 0);
@@ -162,7 +166,7 @@ int main(int argc, char **argv) {
   root = DefaultRootWindow(d);
 #define A(v, s) v = XInternAtom(d, s, False)
   A(a_client_list, "_NET_CLIENT_LIST"); A(a_active, "_NET_ACTIVE_WINDOW"); A(a_steam_game, "STEAM_GAME");
-  A(a_bigpicture, "STEAM_BIGPICTURE"); A(a_overlay, "STEAM_OVERLAY");
+  A(a_bigpicture, "STEAM_BIGPICTURE"); A(a_overlay, "STEAM_OVERLAY"); A(a_wm_state, "WM_STATE");
   A(a_pid, "_NET_WM_PID"); A(a_base_appid, "GAMESCOPECTRL_BASELAYER_APPID");
   A(a_base_window, "GAMESCOPECTRL_BASELAYER_WINDOW"); A(a_focusable_apps, "GAMESCOPE_FOCUSABLE_APPS");
   A(a_focusable_windows, "GAMESCOPE_FOCUSABLE_WINDOWS"); A(a_focused_app, "GAMESCOPE_FOCUSED_APP");

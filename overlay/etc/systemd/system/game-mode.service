@@ -1,9 +1,0 @@
-[Unit]
-Description=Lower Steam's web helper to SCHED_IDLE while a game runs
-
-[Service]
-ExecStart=/usr/local/sbin/game-mode
-Restart=always
-
-[Install]
-WantedBy=multi-user.target

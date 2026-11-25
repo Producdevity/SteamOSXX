@@ -18,6 +18,8 @@ export LD_LIBRARY_PATH=$root/steamrtarm64:$root/steamrtarm64/panorama
 export LD_PRELOAD=/usr/local/lib/lse/liblse_emu.so
 export LSE_EMU=1 LSE_EMU_PATCH=1
 export PRESSURE_VESSEL_REMOVE_GAME_OVERLAY=1
+# Proton's xalia (gamepad helper for Win32 dialogs) costs ~14 % CPU and RAM in every game here.
+export PROTON_USE_XALIA=0
 export SDL_VIDEO_X11_DGAMOUSE=0
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 [ -d "$XDG_RUNTIME_DIR" ] || XDG_RUNTIME_DIR=/tmp/xdg-$(id -u)
@@ -34,6 +36,9 @@ if [ "${STEAMOS:-0}" = 1 ]; then
   export STEAMOS_STEAM_REBOOT_SENTINEL=/tmp/steamos-reboot-sentinel
   export STEAMOS_STEAM_SHUTDOWN_SENTINEL=/tmp/steamos-shutdown-sentinel
   export STEAM_ENABLE_VOLUME_HANDLER=1
+  # Steam's UI turns on its gamescope behaviour (hide itself while a game window has focus, base-layer
+  # app queue) only when this is set. sxx-focus plays gamescope's side on Xorg; nothing listens here.
+  [ "${GAMESCOPE_COMPAT:-1}" = 1 ] && export GAMESCOPE_WAYLAND_DISPLAY=gamescope-0
   rm -f "$STEAMOS_STEAM_REBOOT_SENTINEL" "$STEAMOS_STEAM_SHUTDOWN_SENTINEL"
 fi
 cef=(-cef-disable-gpu -cef-disable-gpu-compositing)
