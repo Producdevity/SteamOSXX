@@ -4,7 +4,7 @@
 # /tmp/sxx-gametest-<appid>-<step>.xwd.
 #   sxx-gametest <appid> [launch-timeout-s]
 app=${1:?appid}; limit=${2:-300}
-export DISPLAY=${DISPLAY:-:0} XAUTHORITY=${XAUTHORITY:-$HOME/.Xauthority}
+export DISPLAY=${DISPLAY:-:0} XAUTHORITY=${XAUTHORITY:-/home/steam/.Xauthority}
 t0=$(date +%s)
 el() { echo "$(( $(date +%s) - t0 ))s"; }
 shot() { xwd -root -silent > "/tmp/sxx-gametest-$app-$1.xwd" 2>/dev/null; }

@@ -20,7 +20,7 @@
     if (!Writer && mod.BinaryWriter) Writer = mod.BinaryWriter;
     for (const v of Object.values(mod)) {
       try {
-        if (!Msg && v && v.fromObject && v.serializeBinaryToWriter && String(v.toObject).includes("screensaver_while_ingame")) Msg = v;
+        if (!Msg && v && v.fromObject && v.serializeBinaryToWriter && (String(v.toObject).includes("screensaver_while_ingame") || String(v).includes("screensaver_while_ingame"))) Msg = v;
       } catch (e) {}
     }
     if (Msg && Writer) break;
