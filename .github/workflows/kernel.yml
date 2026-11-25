@@ -1,0 +1,33 @@
+name: kernel
+on:
+  workflow_dispatch:
+  push:
+    paths: ['kernel/**', '.github/workflows/kernel.yml']
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kernel:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential bc bison flex libssl-dev libelf-dev rsync xz-utils python3 git cpio kmod patch curl ccache
+      - name: ROCKNIX kernel, modules and firmware (inputs for the built-in initramfs and firmware)
+        run: bash tools/fetch-rocknix.sh
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-kernel-${{ hashFiles('kernel/build.sh') }}
+          restore-keys: ccache-kernel-
+      - run: bash kernel/build.sh
+        env:
+          CC: ccache gcc
+          CCACHE_DIR: ~/.cache/ccache
+      - run: tar -C out/kernel -cf - . | xz -T0 -3 > out/kernel.tar.xz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel
+          path: out/kernel.tar.xz
+          retention-days: 14
+          compression-level: 0
