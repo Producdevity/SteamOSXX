@@ -9,7 +9,8 @@
 #   PUSH_BASE=1 tools/build-rootfs.sh   after building the base, push it (CI on main; needs a ghcr login)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-REGISTRY=${BASE_REGISTRY:-ghcr.io/xxjsonderulox/steamos-rg40xx-base}
+REGISTRY=${BASE_REGISTRY:-ghcr.io/xxjsonderuloxx/steamos-rg40xx-base}
+REGISTRY=${REGISTRY,,}
 [ -d cache/overlay ] || tools/fetch-rocknix.sh
 # A CRLF script or config in the image breaks at boot (`/bin/sh^M`); Windows editors and Python's text mode write them.
 crlf=$(find overlay rootfs debug -type f -exec grep -lU "$(printf '\r')" {} + 2>/dev/null || true)

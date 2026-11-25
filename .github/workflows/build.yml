@@ -42,6 +42,7 @@ jobs:
       - run: bash tools/build-rootfs.sh
         env:
           PUSH_BASE: ${{ github.event_name != 'pull_request' && '1' || '0' }}
+          BASE_REGISTRY: ghcr.io/${{ github.repository_owner }}/steamos-rg40xx-base
       - uses: actions/upload-artifact@v4
         with:
           name: rootfs
