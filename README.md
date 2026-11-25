@@ -78,7 +78,7 @@ The development setup keeps muOS in slot 1 as a known-good recovery system and t
 - `tools/rescue.sh` finds the device in any state and gets a shell back; `tools/dev.sh` runs commands and
   takes screenshots over adb or SSH; `tools/push-live.sh` applies the overlay to the running device.
 - `tools/backup-steam.sh` / `tools/restore-steam.sh` keep the Steam tree (games, Proton, login) across
-  reflashes; `tools/reflash-slot2.sh` writes `out/steamos-rg40xx.img` to the slot-2 card and boots it.
+  reflashes; `tools/cycle.sh` chains build, flash, restore and test; `tools/reflash-slot2.sh` writes `out/steamos-rg40xx.img` to the slot-2 card and boots it.
 - `tools/smoke.sh` checks every area in one go; on the device, `sxx-gametest <appid>` launches a game from
   Steam and checks it comes to the front, the Steam menu opens over it and closes, and quitting returns
   to Big Picture. `sxx eval` drives Steam's UI through DevTools; `sxx pad` presses buttons on a virtual pad.
