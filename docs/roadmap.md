@@ -63,7 +63,8 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] stick RGB LEDs, rumble (FF on the pad),
       headphone-jack switching, HDMI out, Bluetooth (RTL8821CS), charge limit. S each
 - [ ] CPU/GPU governors (schedutil, Panfrost devfreq), thermals, battery life measurement. S/M
-- [ ] Standalone boot from slot 1 (`uboot/build.sh card`), and the slot-2 card as a Steam library. M
+- [x] Standalone boot from slot 1 (`uboot/build.sh card`): verified 2026-11-25, root on mmcblk0.
+- [ ] The slot-2 card as a Steam library. M
 - [ ] Detect the DRAM revision at install (read the stock boot0 before overwriting) or ship per-revision
       U-Boots. M
 
