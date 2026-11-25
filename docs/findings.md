@@ -276,5 +276,32 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - Geometry Wars on proton-armv8 11.0-3, title screen: WineD3D on Panfrost GL 3.1 **8.6 FPS**, correct
   rendering. DXVK on llvmpipe: 1.4-3.8 FPS. With WineD3D the game process uses ~25 % CPU (it was CPU-bound
   at ~180-280 % with llvmpipe).
-- Default now: `WINEDLLOVERRIDES=d3d8,d3d9=b` in the session (Proton keeps user overrides). D3D8/9 use
-  WineD3D on the GPU; D3D10/11 stay on DXVK (WineD3D needs more than GL 3.1 for those).
+- Correction (found later the same day): `WINEDLLOVERRIDES=d3d8,d3d9=b` does nothing, because Proton appends
+  `d3d9=n;d3d11=n;...` after whatever the session sets, so DXVK stayed in use and the 6 FPS runs in between
+  were DXVK on llvmpipe (their FPS lines say `win32u_vkQueuePresentKHR`; WineD3D's say `wglSwapBuffers` or
+  `wined3d_cs_exec_present`). The switch that works is `PROTON_USE_WINED3D=1`, now exported by the session.
+  Per game, `PROTON_USE_WINED3D=0` in the launch options brings DXVK back for D3D10/11 titles.
+
+### GPU Vulkan: PanVK works on the Mali-G31, but cannot run DXVK or gamescope (2026-11-24)
+- Mesa 26.1.6 from trixie-backports (the image now uses it) enumerates `Mali-G31 MC1` (gpu id 0x7093, one
+  shader core) through PanVK with `PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1`. Debian's 25.0.7 listed no device.
+  `vkcube` draws the lit, textured cube correctly (about 55 FPS vsynced), so command submission, WSI (xcb)
+  and the kernel side (panfrost uAPI) are fine.
+- Vulkan 1.0 only: PanVK gates 1.1+ on Valhall (v10); Mesa 26.3.0 (released 2026-11-09, not in Debian yet)
+  adds 1.1-1.3 on Bifrost v6/v7. Per the source it still has no `VK_EXT_robustness2`, no transform
+  feedback, no descriptor indexing, and `geometryShader`, `fillModeNonSolid`, `shaderClipDistance` stay false
+  (the hardware has no geometry shaders).
+- Consequences: DXVK (needs Vulkan 1.3, robustness2 nullDescriptor and, for D3D11, geometry shaders) cannot
+  run on it; gamescope needs `nullDescriptor` too. Launching Geometry Wars with PanVK visible to DXVK hung at
+  startup (no DXVK log, game idle). Native Vulkan programs work: `panvk-run <program>`. PanVK stays off by
+  default so Steam, Proton and DXVK keep seeing only llvmpipe.
+- Mesa 26.1.6 vs 25.0.7 for the GL path (Geometry Wars under WineD3D, title screen): ~6-8 FPS vs 8.6, within
+  run-to-run noise. Kept for PanVK.
+- Sources: Mesa source at `src/panfrost/vulkan` (`panvk_physical_device.c`, `panvk_vX_physical_device.c`,
+  tag 26.3.1) and the 26.3.0 release notes.
+
+### Backups
+- `tools/backup-steam.sh` writes the Steam tree (client, Proton, FEX, runtimes, games, prefixes, login;
+  not logs or shader caches) to `cache/steam-backup.tar` (10.9 GB): tar on the device, pulled over adb at
+  ~17 MB/s. Streaming it over SSH (Wi-Fi) ran at ~150 KB/s, and an adb shell pipe corrupts binary data.
+  `tools/restore-steam.sh` puts it back; `STEAM_SEED=cache/steam-backup.tar tools/build-image.sh` bakes it in.

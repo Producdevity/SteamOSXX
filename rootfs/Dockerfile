@@ -3,6 +3,11 @@
 FROM debian:trixie
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
+# Mesa 26.1 from trixie-backports: its PanVK (Vulkan) enumerates the Mali-G31; trixie's 25.0 does not.
+RUN printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.pgp\n' \
+      > /etc/apt/sources.list.d/trixie-backports.sources \
+ && printf 'Package: mesa-* libgl1-mesa-dri libglx-mesa0 libegl-mesa0 libgbm1 libglapi-mesa libgallium*\nPin: release a=trixie-backports\nPin-Priority: 600\n' \
+      > /etc/apt/preferences.d/mesa-backports
 RUN apt-get update && apt-get install -y --no-install-recommends \
     systemd systemd-sysv systemd-timesyncd udev dbus dbus-user-session dbus-x11 iproute2 kbd libpam-systemd kmod sudo \
     openssh-server openssh-client earlyoom adbd network-manager wpasupplicant iw wireless-regdb rfkill \

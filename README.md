@@ -21,16 +21,16 @@ brings KMS, Panfrost, PipeWire, user namespaces and SysV IPC.
 |---|---|---|
 | Boot | yes | U-Boot with this unit's LPDDR4 timings, ROCKNIX's mainline 7.2 kernel, Debian trixie |
 | Display | yes | DSI panel via sun4i-drm/KMS, Xorg modesetting + glamor on Panfrost |
-| GPU | partial | Panfrost GL 3.1 / GLES 3.1; Vulkan is software only (Debian Mesa has no PanVK for Bifrost) |
+| GPU | partial | Panfrost GL 3.1 / GLES 3.1 (Mesa 26.1); PanVK Vulkan 1.0 for native programs (`panvk-run`), not enough for DXVK |
 | Steam | yes | `steamdeck_publicbeta` linuxarm64 client, `-gamepadui -steamos3`, LSE atomics emulated (ARMv8.0) |
-| Games | yes, slow | Proton ARM64 (Valve's, or [proton-armv8](https://github.com/sunshineinabox/proton-armv8)) + FEX; D3D9 on the GPU (WineD3D/Panfrost), D3D10/11 DXVK on llvmpipe. See [docs/games.md](docs/games.md) |
+| Games | yes, slow | Proton ARM64 (Valve's, or [proton-armv8](https://github.com/sunshineinabox/proton-armv8)) + FEX; Direct3D on the GPU through WineD3D/Panfrost (D3D10/11 need DXVK on llvmpipe, slow). See [docs/games.md](docs/games.md) |
 | SteamOS session | partial | gamescope's focus protocol on Xorg (`sxx-focus`): games in front, Steam button menu over them; power menu; brightness slider; volume |
 | Audio | yes | H616 codec through PipeWire in the session; speaker and headphone jack |
 | Controls | yes | `H700 Gamepad` through Steam Input (in Big Picture and in games); volume keys, menu+volume brightness |
 | Memory (1 GB) | managed | zstd zram at 2x RAM, earlyoom, MGLRU thrash guard, and a guard that ends a game on sustained memory stalls |
 | Wi-Fi | yes | RTL8821CS (rtw88), NetworkManager |
 | Sleep / wake | not yet | needs TF-A's H616 PSCI system-suspend support |
-| gamescope | emulated | real gamescope needs a Vulkan driver with `robustness2` (no PanVK for this GPU in Mesa 25.0); Steam runs in its gamescope mode against Xorg + `sxx-focus` |
+| gamescope | emulated | real gamescope needs `VK_EXT_robustness2`, which PanVK lacks on this GPU (Bifrost); Steam runs in its gamescope mode against Xorg + `sxx-focus` |
 | Standalone boot from slot 1 | built, untested | development currently boots it from slot 2 through FEL |
 
 ## How it boots

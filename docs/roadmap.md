@@ -26,7 +26,7 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] CI: GitHub Actions builds U-Boot, rootfs and image (arm64 runners or QEMU). M
 
 ## 2. Games
-- [x] Renderer choice per API on this GPU (D3D8/9 WineD3D on Panfrost, D3D10/11 DXVK): compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
+- [x] Renderer choice on this GPU (WineD3D on Panfrost via `PROTON_USE_WINED3D=1`; DXVK per game): compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
       on Geometry Wars (FPS, CPU); pick a default. S
 - [~] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
       `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S
@@ -65,7 +65,7 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
       U-Boots. M
 
 ## 5. GPU / gamescope (long shot)
-- [ ] Mesa 26 PanVK on Bifrost v7 (`PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1`): does DXVK run on it? L
+- [x] PanVK on Bifrost v7 (Mesa 26.1, `panvk-run`): works for native Vulkan, Vulkan 1.0, cannot run DXVK or gamescope (no robustness2, geometry shaders). Revisit with Mesa 26.3 (Vulkan 1.3 on v7) once packaged. S
 - [ ] gamescope: make `VK_EXT_robustness2` nullDescriptor optional, handle the split display/GPU devices
       (gamescope #2070), synthesize an EDID for the DSI panel (Armada patches 0002/0003). L, high risk
 - [ ] Until then keep Xorg + openbox (works, low overhead).
