@@ -261,3 +261,10 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   Steam menu +7 s, back in game +5 s, quit and Big Picture back +4 s. A second `RunGame` while the game runs
   leaves a "Game already running" dialog that holds Steam in Overlay composition (the test quits a running
   copy first).
+
+### Brightness and PanVK (2026-11-24)
+- Steam's brightness slider works: `SteamClient.System.Display.SetBrightness(x)` writes
+  `/sys/class/backlight/*/brightness` itself, on a perceptual curve (0.4 -> 376/2499), and
+  `RegisterForBrightnessChanges` reports it back. `70-backlight.rules` lets the `video` group write it.
+- PanVK in Debian's Mesa 25.0.7 lists no device for the Mali-G31 (Bifrost v7), even with
+  `PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1`. GPU Vulkan needs a newer Mesa build; DXVK stays on llvmpipe.
