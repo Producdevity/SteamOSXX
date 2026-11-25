@@ -48,6 +48,7 @@ cd "$root"
 while :; do
   /usr/local/bin/patch-webhelper.py >>"$log" 2>&1
   echo "== $(date -u +%FT%TZ) starting steam ${ui[*]} ${cef[*]} ${STEAM_EXTRA_ARGS:-}" >>"$log"
+  [ -n "${CDP_PORT:-}" ] && /usr/local/bin/sxx-steam-defaults >>"$log" 2>&1 &
   "$root/steamrtarm64/steam" -clientbeta "$(cat "$root/package/beta")" "${ui[@]}" \
     -no-cef-sandbox -cef-ozone-platform=x11 "${cef[@]}" ${STEAM_EXTRA_ARGS:-} >>"$log" 2>&1
   rc=$?

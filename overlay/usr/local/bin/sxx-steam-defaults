@@ -1,0 +1,8 @@
+#!/bin/sh
+# Waits for Big Picture's library, then applies /usr/local/share/sxx/steam-defaults.js. Started in the
+# background by run-steam.sh on every Steam start; needs the DevTools port (CDP_PORT).
+for i in $(seq 1 120); do
+  sxx eval 'location.pathname' 2>/dev/null | grep -q '/library' && break
+  sleep 5
+done
+sxx eval "$(cat /usr/local/share/sxx/steam-defaults.js)" 2>&1 | tail -1 | sed 's/^/sxx-steam-defaults: /'
