@@ -75,6 +75,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          body_path: docs/release-notes/${{ github.ref_name }}.md
           files: |
             out/steamos-rg40xx.img.xz
             out/steamos-rg40xx.img.xz.sha256
