@@ -26,7 +26,7 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] CI: GitHub Actions builds U-Boot, rootfs and image (arm64 runners or QEMU). M
 
 ## 2. Games
-- [ ] Renderer choice per API on this GPU: compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
+- [x] Renderer choice per API on this GPU (D3D8/9 WineD3D on Panfrost, D3D10/11 DXVK): compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
       on Geometry Wars (FPS, CPU); pick a default. S
 - [~] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
       `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S

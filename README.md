@@ -12,8 +12,8 @@ brings KMS, Panfrost, PipeWire, user namespaces and SysV IPC.
 
 > **Status: early but working.** The image boots into Steam's Big Picture, and Windows games launch from
 > it through Proton ARM64 + FEX. Games come to the front, the Steam button opens Steam's menu over them,
-> and B returns, as on SteamOS. Expect it to be slow: Steam's UI is Chromium on four A53 cores, and
-> Direct3D renders on the CPU (Geometry Wars: 1.5-4 FPS).
+> and B returns, as on SteamOS. Expect it to be slow: Steam's UI is Chromium on four A53 cores; Direct3D 9
+> renders on the Mali through WineD3D (Geometry Wars: ~8 FPS), Direct3D 10/11 on the CPU.
 
 ## What works
 
@@ -23,7 +23,7 @@ brings KMS, Panfrost, PipeWire, user namespaces and SysV IPC.
 | Display | yes | DSI panel via sun4i-drm/KMS, Xorg modesetting + glamor on Panfrost |
 | GPU | partial | Panfrost GL 3.1 / GLES 3.1; Vulkan is software only (Debian Mesa has no PanVK for Bifrost) |
 | Steam | yes | `steamdeck_publicbeta` linuxarm64 client, `-gamepadui -steamos3`, LSE atomics emulated (ARMv8.0) |
-| Games | yes, slow | Proton ARM64 (Valve's, or [proton-armv8](https://github.com/sunshineinabox/proton-armv8)) + FEX; DXVK on llvmpipe. See [docs/games.md](docs/games.md) |
+| Games | yes, slow | Proton ARM64 (Valve's, or [proton-armv8](https://github.com/sunshineinabox/proton-armv8)) + FEX; D3D9 on the GPU (WineD3D/Panfrost), D3D10/11 DXVK on llvmpipe. See [docs/games.md](docs/games.md) |
 | SteamOS session | partial | gamescope's focus protocol on Xorg (`sxx-focus`): games in front, Steam button menu over them; power menu; brightness slider; volume |
 | Audio | yes | H616 codec through PipeWire in the session; speaker and headphone jack |
 | Controls | yes | `H700 Gamepad` through Steam Input (in Big Picture and in games); volume keys, menu+volume brightness |

@@ -30,19 +30,12 @@ case "${1:-status}" in
   sh) run "$2" ;;
   ssh) shift; "${SSH[@]}" "root@$HOST" "$@" ;;
   shot)
+    # What the panel scans out (KMS plane via ffmpeg kmsgrab); xwd of the X root misreads GL windows.
     out=${2:-out/shot.png}
-    run 'runuser -u steam -- env DISPLAY=:0 XAUTHORITY=/home/steam/.Xauthority xwd -root -silent > /tmp/root.xwd'
+    run 'ffmpeg -hide_banner -loglevel error -y -device /dev/dri/card1 -f kmsgrab -i - -vf hwdownload,format=bgr0 -frames:v 1 /tmp/shot.png' >/dev/null 2>&1
     s=$(adb_serial)
-    if [ -n "$s" ]; then adb -s "$s" pull /tmp/root.xwd out/root.xwd >/dev/null
-    else scp -q -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$HOST:/tmp/root.xwd" out/root.xwd; fi
-    python -c "
-import sys, struct
-from PIL import Image
-d = open('out/root.xwd', 'rb').read()
-hs, = struct.unpack('>I', d[0:4]); w, h = struct.unpack('>II', d[16:24]); bpl, = struct.unpack('>I', d[48:52])
-ncolors, = struct.unpack('>I', d[76:80])
-px = d[hs + ncolors * 12:]
-Image.frombuffer('RGBX', (w, h), px[:bpl * h], 'raw', 'BGRX', bpl, 1).convert('RGB').save(sys.argv[1])
-print(sys.argv[1], w, h)" "$out" ;;
+    if [ -n "$s" ]; then adb -s "$s" pull /tmp/shot.png "$out" >/dev/null
+    else scp -q -i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "root@$HOST:/tmp/shot.png" "$out"; fi
+    echo "$out" ;;
   *) echo "usage: $0 status|sh CMD|ssh ARGS|shot [png]"; exit 2 ;;
 esac

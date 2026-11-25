@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl unzip xz-utils file procps psmisc strace gdb binutils less nano lsof pciutils \
     usbutils evtest htop python3 gcc libc6-dev libx11-dev \
     xserver-xorg-core xserver-xorg-input-libinput xinit xauth x11-xserver-utils x11-utils x11-apps \
-    xdotool openbox unclutter-xfixes \
+    xdotool openbox unclutter-xfixes ffmpeg \
     libgl1-mesa-dri libglx-mesa0 libegl1 libgles2 libgbm1 mesa-vulkan-drivers libvulkan1 vulkan-tools mesa-utils \
     pipewire pipewire-pulse pipewire-alsa wireplumber rtkit alsa-utils upower \
     libnss3 libnspr4 libdrm2 libgl1 libgtk-3-0t64 libgtk2.0-0t64 libxss1 libxtst6 libxrandr2 libxcomposite1 \

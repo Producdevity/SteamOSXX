@@ -20,6 +20,9 @@ export LSE_EMU=1 LSE_EMU_PATCH=1
 export PRESSURE_VESSEL_REMOVE_GAME_OVERLAY=1
 # Proton's xalia (gamepad helper for Win32 dialogs) costs ~14 % CPU and RAM in every game here.
 export PROTON_USE_XALIA=0
+# Direct3D 8/9 through Wine's own GL renderer on the Mali (Panfrost GL 3.1) instead of DXVK on llvmpipe:
+# Geometry Wars 8.6 FPS vs 1.4-3.8. D3D10/11 stay on DXVK, which WineD3D cannot do on GL 3.1.
+export WINEDLLOVERRIDES="d3d8,d3d9=b${WINEDLLOVERRIDES:+;$WINEDLLOVERRIDES}"
 export SDL_VIDEO_X11_DGAMOUSE=0
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 [ -d "$XDG_RUNTIME_DIR" ] || XDG_RUNTIME_DIR=/tmp/xdg-$(id -u)

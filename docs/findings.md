@@ -268,3 +268,13 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   `RegisterForBrightnessChanges` reports it back. `70-backlight.rules` lets the `video` group write it.
 - PanVK in Debian's Mesa 25.0.7 lists no device for the Mali-G31 (Bifrost v7), even with
   `PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1`. GPU Vulkan needs a newer Mesa build; DXVK stays on llvmpipe.
+
+### Direct3D 9 on the GPU: WineD3D on Panfrost is the faster path (2026-11-24)
+- Screenshots of GL windows via `xwd` are wrong on this setup: the content reads as packed 24-bit pixels in a
+  32-bit image (480 of 640 columns, grey stripes). The "wrong colours" noted for WineD3D earlier were this
+  artifact. `tools/dev.sh shot` now grabs the KMS plane (`ffmpeg -f kmsgrab`), which is what the panel shows.
+- Geometry Wars on proton-armv8 11.0-3, title screen: WineD3D on Panfrost GL 3.1 **8.6 FPS**, correct
+  rendering. DXVK on llvmpipe: 1.4-3.8 FPS. With WineD3D the game process uses ~25 % CPU (it was CPU-bound
+  at ~180-280 % with llvmpipe).
+- Default now: `WINEDLLOVERRIDES=d3d8,d3d9=b` in the session (Proton keeps user overrides). D3D8/9 use
+  WineD3D on the GPU; D3D10/11 stay on DXVK (WineD3D needs more than GL 3.1 for those).
