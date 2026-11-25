@@ -18,8 +18,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 
 ## 1. Reproducibility (do first; many fixes were applied live)
 - [ ] Diff the running device against `overlay/` + `rootfs/` and fold in anything missing. S
-- [ ] Rebuild rootfs and image from scratch; flash slot 2 from muOS (`dd` to `/dev/mmcblk1`), FEL-boot, run
-      `tools/smoke.sh`. Automate as `tools/reflash-slot2.sh`. M
+- [x] Rebuild rootfs and image from scratch, flash slot 2 from muOS, FEL-boot, restore the Steam backup,
+      `tools/smoke.sh` and `sxx-gametest` pass (2026-11-24). `tools/reflash-slot2.sh`, `backup-steam.sh`,
+      `restore-steam.sh`. Remaining: one command that does build + flash + restore + test.
 - [~] Pin the Steam bootstrap: `tools/fetch-steam.sh` installs the arm64 client from the CDN manifest
       (each package SHA256-checked) into a clean seed tar; `STEAM_SEED=` puts it in the image. Still to do:
       pin a manifest version, and check that the first start does not re-download. M
