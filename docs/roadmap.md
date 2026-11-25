@@ -28,12 +28,14 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 ## 2. Games
 - [ ] Renderer choice per API on this GPU: compare DXVK-on-llvmpipe vs `PROTON_USE_WINED3D=1` (Panfrost GL 3.1)
       on Geometry Wars (FPS, CPU); pick a default. S
-- [ ] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
+- [~] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
       `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S
 - [ ] fex-armv8 for native x86 Linux games. S/M
 - [~] Never livelock on memory: earlyoom (games first), MGLRU `min_ttl_ms`, PSI game kill in the
       memory-locked `reach-guard` (plus a real sshd probe). Verify with a deliberate memory hog. S
-- [~] Game windows on top: `sxx-focus` implements gamescope's base-layer focus protocol for Steam. S
+- [x] Game windows on top, Steam button menu over games and back: `GAMESCOPE_WAYLAND_DISPLAY` turns on
+      Steam's gamescope logic, `sxx-focus` plays gamescope's side (base layer, overlay plane, focus). S
+- [ ] Faster Steam menu in game (10-20 s now: web helper comes back from zram). M
 - [ ] Game mode for 1 GB: suspend or unload steamwebhelper while a game runs, per-game zram/swap
       (Switchdeck's `SD_GAMEMODE`). Measure free RAM in game before/after. M
 - [ ] Steam in-game overlay back in the container: LSE-Emu must initialise before the overlay there too

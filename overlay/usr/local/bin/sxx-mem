@@ -1,0 +1,9 @@
+#!/bin/sh
+# Memory census: RAM, zram, and the largest process groups by PSS (resident + swapped, shared pages split).
+free -m | sed -n 1,3p
+zramctl --output NAME,DISKSIZE,DATA,COMPR,TOTAL | tail -1
+for p in $(ls /proc | grep -E '^[0-9]+$'); do
+  r=$(awk '/^(Pss|SwapPss):/ {s += $2} END {print s + 0}' /proc/$p/smaps_rollup 2>/dev/null)
+  c=$(cat /proc/$p/comm 2>/dev/null)
+  [ -n "$r" ] && [ "$r" -gt 0 ] && echo "$r $c"
+done | awk '{g = $2; sub(/[:\-_.].*/, "", g); s[g] += $1} END {for (g in s) printf "%7.1f MB  %s\n", s[g] / 1024, g}' | sort -rn | head -${1:-14}

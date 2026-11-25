@@ -7,7 +7,7 @@ Big Picture; Windows games through Proton ARM64 + FEX; DXVK on llvmpipe unless n
 |---|---|---|---|---|---|
 | Geometry Wars: Retro Evolved (8400) | Proton Experimental (ARM64) | DXVK / llvmpipe | Runs, playable input | 6.4 intro, 1.3-3.0 menu | menu 3.0 with the web helper stopped |
 | Geometry Wars: Retro Evolved (8400) | Proton Experimental (ARM64) | WineD3D / Panfrost GL 3.1 | Runs, wrong colours | 4.5 intro | `PROTON_USE_WINED3D=1` |
-| Geometry Wars: Retro Evolved (8400) | proton-armv8 11.0-3 (sunshineinabox) | DXVK / llvmpipe | Starts; hidden behind Big Picture, then memory livelock | - | before `sxx-focus`, earlyoom, swapfile |
+| Geometry Wars: Retro Evolved (8400) | proton-armv8 11.0-3 (sunshineinabox) | DXVK / llvmpipe | Runs; comes to the front on launch, Steam button menu and back work | 1.4-3.8 menu | ~2 min to the title screen; 441 MB |
 
 How to test a title: install it from Big Picture, then
 `sxx eval 'SteamClient.Apps.SetAppLaunchOptions(<appid>, "DXVK_HUD=fps /usr/local/bin/sxx-wrap %command%")'`

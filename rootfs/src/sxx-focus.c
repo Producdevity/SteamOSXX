@@ -17,7 +17,7 @@
 
 static Display *d;
 static Window root;
-static Atom a_client_list, a_active, a_steam_game, a_bigpicture, a_overlay, a_wm_state, a_pid, a_base_appid, a_base_window,
+static Atom a_client_list, a_active, a_steam_game, a_bigpicture, a_overlay, a_input_focus, a_wm_state, a_pid, a_base_appid, a_base_window,
     a_focusable_apps, a_focusable_windows, a_focused_app, a_focused_app_gfx, a_focused_window;
 static int verbose;
 
@@ -96,19 +96,41 @@ static unsigned long window_appid(Window w, unsigned long pid) {
 
 struct win { Window w; unsigned long appid, pid; };
 
+static void activate(Window w) {
+  if (verbose) fprintf(stderr, "sxx-focus: activating 0x%lx\n", w);
+  XEvent ev = {0};
+  ev.xclient.type = ClientMessage;
+  ev.xclient.window = w;
+  ev.xclient.message_type = a_active;
+  ev.xclient.format = 32;
+  ev.xclient.data.l[0] = 2;  // source: pager, so the WM does not apply focus-stealing prevention
+  ev.xclient.data.l[1] = CurrentTime;
+  XSendEvent(d, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
+  XRaiseWindow(d, w);
+}
+
 static void sync_focus(void) {
   unsigned long n;
   long *clients = get_cardinals(root, a_client_list, XA_WINDOW, &n);
   struct win wins[MAXW]; int nw = 0;
+  Window overlay = 0; int overlay_input = 0;
   for (unsigned long i = 0; i < n && nw < MAXW; i++) {
     Window w = (Window)clients[i];
     XWindowAttributes wa;
+    XSelectInput(d, w, PropertyChangeMask);
     // Wine minimizes a fullscreen game that loses focus; gamescope never iconifies, so a minimized client
     // stays focusable here and activating it restores it.
     int iconic = get_cardinal(w, a_wm_state, 0) == IconicState;
     if (!XGetWindowAttributes(d, w, &wa) || (wa.map_state != IsViewable && !iconic) || wa.class == InputOnly ||
-        (wa.width <= 1 && wa.height <= 1) || get_cardinal(w, a_overlay, 0))
+        (wa.width <= 1 && wa.height <= 1))
       continue;
+    // STEAM_OVERLAY windows (Steam's in-game menu) are never the base layer; gamescope draws them on top,
+    // and they take input while STEAM_INPUT_FOCUS is set.
+    if (get_cardinal(w, a_overlay, 0)) {
+      int input = get_cardinal(w, a_input_focus, 0) != 0;
+      if (!overlay || input) { overlay = w; overlay_input = input; }
+      continue;
+    }
     unsigned long pid = get_cardinal(w, a_pid, 0);
     unsigned long id = window_appid(w, pid);
     if (!id) continue;
@@ -137,25 +159,16 @@ static void sync_focus(void) {
       if ((long)wins[i].appid == base[b]) pick = &wins[i];
   if (base) XFree(base);
   // Like gamescope under Steam control: no match keeps the current focus.
-  if (!pick) { XFlush(d); return; }
-
-  long app = (long)pick->appid, w = (long)pick->w;
-  XChangeProperty(d, root, a_focused_app, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, app != 0);
-  XChangeProperty(d, root, a_focused_app_gfx, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, app != 0);
-  XChangeProperty(d, root, a_focused_window, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&w, 1);
-  Window active = (Window)get_cardinal(root, a_active, 0);
-  if (active != pick->w) {
-    if (verbose) fprintf(stderr, "sxx-focus: activating 0x%lx (app %lu)\n", pick->w, pick->appid);
-    XEvent ev = {0};
-    ev.xclient.type = ClientMessage;
-    ev.xclient.window = pick->w;
-    ev.xclient.message_type = a_active;
-    ev.xclient.format = 32;
-    ev.xclient.data.l[0] = 2;  // source: pager, so the WM does not apply focus-stealing prevention
-    ev.xclient.data.l[1] = CurrentTime;
-    XSendEvent(d, root, False, SubstructureRedirectMask | SubstructureNotifyMask, &ev);
-    XRaiseWindow(d, pick->w);
+  if (pick) {
+    long app = (long)pick->appid, w = (long)pick->w;
+    long input_app = overlay_input ? STEAM_APPID : app;
+    XChangeProperty(d, root, a_focused_app, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&input_app, input_app != 0);
+    XChangeProperty(d, root, a_focused_app_gfx, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&app, app != 0);
+    XChangeProperty(d, root, a_focused_window, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&w, 1);
   }
+  Window want = overlay && (overlay_input || !pick) ? overlay : pick ? pick->w : 0;
+  if (want && (Window)get_cardinal(root, a_active, 0) != want) activate(want);
+  if (overlay) XRaiseWindow(d, overlay);
   XFlush(d);
 }
 
@@ -166,7 +179,7 @@ int main(int argc, char **argv) {
   root = DefaultRootWindow(d);
 #define A(v, s) v = XInternAtom(d, s, False)
   A(a_client_list, "_NET_CLIENT_LIST"); A(a_active, "_NET_ACTIVE_WINDOW"); A(a_steam_game, "STEAM_GAME");
-  A(a_bigpicture, "STEAM_BIGPICTURE"); A(a_overlay, "STEAM_OVERLAY"); A(a_wm_state, "WM_STATE");
+  A(a_bigpicture, "STEAM_BIGPICTURE"); A(a_overlay, "STEAM_OVERLAY"); A(a_input_focus, "STEAM_INPUT_FOCUS"); A(a_wm_state, "WM_STATE");
   A(a_pid, "_NET_WM_PID"); A(a_base_appid, "GAMESCOPECTRL_BASELAYER_APPID");
   A(a_base_window, "GAMESCOPECTRL_BASELAYER_WINDOW"); A(a_focusable_apps, "GAMESCOPE_FOCUSABLE_APPS");
   A(a_focusable_windows, "GAMESCOPE_FOCUSABLE_WINDOWS"); A(a_focused_app, "GAMESCOPE_FOCUSED_APP");
@@ -181,7 +194,8 @@ int main(int argc, char **argv) {
       XNextEvent(d, &ev);
       if (ev.type == PropertyNotify) {
         Atom a = ev.xproperty.atom;
-        relevant |= a == a_client_list || a == a_base_appid || a == a_base_window || a == a_active;
+        relevant |= a == a_client_list || a == a_base_appid || a == a_base_window || a == a_active ||
+                    a == a_overlay || a == a_input_focus || a == a_wm_state;
       } else if (ev.type == MapNotify || ev.type == UnmapNotify || ev.type == ConfigureNotify) {
         relevant = 1;
       }

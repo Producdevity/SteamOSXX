@@ -250,3 +250,10 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   out. Now zram = 2x RAM, `vm.swappiness=180`, `page-cluster=0`, `watermark_boost_factor=0`,
   `watermark_scale_factor=125`. `PROTON_USE_XALIA=0` (xalia took ~14 % CPU per game).
 - Geometry Wars main menu on proton-armv8 11.0-3 (ARMv8.0 build, no LSE traps): 1.4-3.8 FPS.
+- In-game Steam button: Steam switches its window to `STEAM_OVERLAY=1`, `STEAM_INPUT_FOCUS=1` (gamescope's
+  overlay plane) and keeps the base layer on the game. `sxx-focus` raises an overlay window above the base
+  window and gives it input focus while `STEAM_INPUT_FOCUS` is set. B returns to the game: Steam clears both
+  properties and the game is activated again. Without a compositor the overlay's transparent parts are black.
+- The Steam menu takes 10-20 s to appear in game: the web helper's memory sits compressed in zram while it
+  is hidden. Memory census in game (`sxx-mem`, PSS + swap): Geometry Wars 441 MB, web helper 388 MB,
+  Steam client 123 MB, Xorg 39 MB, Wine services ~90 MB. zram held 700 MB in 173 MB.
