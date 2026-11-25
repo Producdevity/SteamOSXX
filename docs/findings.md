@@ -318,3 +318,17 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   ~7 MB/s, limited by SD writes. Pulling a large file with `adb pull` is fine (17 MB/s).
 - Gotcha: `pkill -f <pattern>` inside an ssh/adb command line kills the shell running it (the pattern is in
   its own command line). Use exact names (`pkill -x`) or `pgrep` into a variable first.
+
+### Real gamescope on llvmpipe (2026-11-25)
+- gamescope 3.16.22 is in trixie-backports (`contrib`, arm64). It picks llvmpipe, the only conformant Vulkan device
+  here, and stops with "physical device doesn't support VK_EXT_physical_device_drm". Everything else it needs is
+  there: Vulkan 1.4, `robustness2`, `geometryShader`, DRM format modifiers, dma-buf and fd external memory.
+  PanVK (Mali-G31) stays out of reach for the reasons above.
+- The missing extension only names the device's DRM nodes. `rootfs/src/vk-fake-drm.c` (LD_PRELOAD) adds it to the
+  device extension list, strips it from `vkCreateDevice` and fills `VkPhysicalDeviceDrmPropertiesEXT`. With it
+  `gamescope --backend headless` starts, creates `gamescope-0`, starts Xwayland and runs a client:
+  glxgears (Panfrost GL through gamescope's Xwayland) holds 30 FPS at `-r 30`, with gamescope at ~85 % of one
+  core compositing 640x480 on llvmpipe (the Steam login QR page was using 170 % at the same time).
+- gamescope also needs `/usr/games` on PATH (`gamescopereaper`).
+- Not tried yet: `--backend sdl` nested in Xorg, Steam inside it, a game inside it. The DRM backend is unlikely to
+  work: llvmpipe's exportable buffers are not physically contiguous and the H700 display engine has no IOMMU.
