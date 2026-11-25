@@ -14,7 +14,7 @@ tar -C overlay -cf - --exclude=.keep . | "${SSH[@]}" "root@$HOST" 'tar -xf - -C 
 tar -C rootfs/src -cf - . | "${SSH[@]}" "root@$HOST" 'mkdir -p /usr/local/src && tar -xf - -C /usr/local/src --no-same-owner --no-overwrite-dir'
 "${SSH[@]}" "root@$HOST" "set -e
   missing=\$(for p in $pkgs; do dpkg -s \$p >/dev/null 2>&1 || echo \$p; done)
-  [ -z \"\$missing\" ] || { apt-get update -qq && apt-get install -y -qq --no-install-recommends \$missing; }
+  [ -z \"\$missing\" ] || { apt-get update -qq && apt-get install -y -qq --no-install-recommends -o Dpkg::Options::=--force-confold \$missing; }
   gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
   gcc -O2 -Wall -o /usr/local/sbin/reach-guard.new /usr/local/src/reach-guard.c && mv -f /usr/local/sbin/reach-guard.new /usr/local/sbin/reach-guard
   chmod +x /usr/local/bin/* /usr/local/sbin/*
@@ -23,6 +23,6 @@ tar -C rootfs/src -cf - . | "${SSH[@]}" "root@$HOST" 'mkdir -p /usr/local/src &&
   systemd-tmpfiles --create /etc/tmpfiles.d/*.conf
   systemctl enable --now earlyoom.service >/dev/null 2>&1
   systemctl restart reach-guard.service earlyoom.service
-  [ -e /swapfile ] || { fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap -q /swapfile; }
-  swapon --show=NAME | grep -q /swapfile || swapon -p -2 /swapfile
+  # The swapfile was tried and dropped: on the root SD card, swap I/O stalls every exec and file read.
+  if [ -e /swapfile ]; then swapoff /swapfile 2>/dev/null || true; rm -f /swapfile; fi
   echo push-live: ok"

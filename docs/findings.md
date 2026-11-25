@@ -197,8 +197,16 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   - `reach-guard` is now C, `mlockall()`ed, probes sshd with a real banner read on 127.0.0.1:22 and calls
     `reboot(2)` itself after 4 minutes: a shell script or `systemctl` would need paging in and stall too.
   - `MemoryMin=24M` + `OOMScoreAdjust=-900` for ssh, usb-gadget (adbd), reach-guard and earlyoom.
-  - 2 GB `/swapfile` at priority -2 behind zram (priority 100), like SteamOS's swapfile.
-
+  - Tried and dropped: a 2 GB `/swapfile` behind zram, as SteamOS keeps one. On this device it shares the SD
+    card with the root filesystem, so while it swapped every exec and file read queued behind swap I/O.
+    `sxx-memhog` (incompressible allocations) then held sshd's banner back for up to 50 s, and the extra 2 GB
+    of swap kept earlyoom's swap-free threshold out of reach. With zram alone the kernel OOM killer (MGLRU
+    `min_ttl_ms`) or earlyoom ends the hog.
+  - `reach-guard` also watches PSI (`/proc/pressure/memory`, `full avg10` >= 30 % for 30 s) and then kills
+    the processes under `reaper SteamLaunch` (the running game, never Steam). A game larger than RAM makes the
+    system crawl long before memory or swap runs out, so neither earlyoom nor the kernel acts. That is what
+    happened here: the screen still updated, but SSH handshakes took longer than any client timeout for
+    about 35 minutes (sshd logged them as `Connection closed ... [preauth]`).
 ### Game windows under Big Picture: gamescope's focus protocol
 - With `-steamos3` Steam believes it runs under gamescope: it writes `GAMESCOPECTRL_BASELAYER_APPID` on the
   root window (seen: `413091, 769`; 769 is Steam itself) and never raises game windows on a plain X server, so

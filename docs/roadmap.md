@@ -31,8 +31,8 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [ ] Install sunshineinabox/proton-armv8 (ARMv8.0 rebuilds of Proton 11/GE, no LSE) into
       `compatibilitytools.d` and make it the default; keeps LSE-Emu for the client only. S
 - [ ] fex-armv8 for native x86 Linux games. S/M
-- [~] Never livelock on memory: earlyoom (games first), MGLRU `min_ttl_ms`, 2 GB swapfile behind zram,
-      memory-locked `reach-guard` with a real sshd probe. Verify with a deliberate memory hog. S
+- [~] Never livelock on memory: earlyoom (games first), MGLRU `min_ttl_ms`, PSI game kill in the
+      memory-locked `reach-guard` (plus a real sshd probe). Verify with a deliberate memory hog. S
 - [~] Game windows on top: `sxx-focus` implements gamescope's base-layer focus protocol for Steam. S
 - [ ] Game mode for 1 GB: suspend or unload steamwebhelper while a game runs, per-game zram/swap
       (Switchdeck's `SD_GAMEMODE`). Measure free RAM in game before/after. M

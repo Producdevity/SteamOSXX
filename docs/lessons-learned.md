@@ -122,7 +122,7 @@ took 131 s with nobody touching the device.
 | our OS hangs (kernel or PID 1) | sunxi hardware watchdog, `RuntimeWatchdogSec=30s` -> reset -> muOS |
 | kernel panic / oops / soft lockup | `panic=10 oops=panic softlockup_panic=1` -> reboot -> muOS |
 | our OS alive but neither adb nor SSH serving | `reach-guard` (C, memory-locked, real sshd banner probe) calls `reboot(2)` after 4 min -> muOS |
-| memory thrash (zram full, userspace livelocked, kernel still answers ping) | `earlyoom`, MGLRU `min_ttl_ms`, swapfile behind zram; `reach-guard` as the backstop |
+| memory thrash (zram full, userspace livelocked, kernel still answers ping) | `earlyoom`, MGLRU `min_ttl_ms`, `reach-guard` kills the game on sustained PSI memory stalls and reboots as the backstop; no swap on the SD card |
 | anything asks our OS to power off | dev mode: `poweroff.target`/`halt.target` link to `reboot.target`, logind ignores the power key (`tools/devmode.sh`) |
 | slot-2 card does not boot | `fel-boot.bin` resets instead of waiting -> muOS, which can rewrite `/dev/mmcblk1` |
 | device stuck in FEL | `sunxi-fel uboot out/uboot/fel-reset.bin` (bootcmd `reset`) -> muOS |
