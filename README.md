@@ -46,6 +46,22 @@ Boot ROM -> U-Boot SPL (LPDDR4 timings from the unit's own boot0) -> TF-A -> U-B
 Card layout: U-Boot at 8 KiB, p1 FAT32 `STEAMBOOT` (kernel, DTBs, initramfs, `extlinux.conf`), p2 ext4
 `steamroot` (grown to the card on first boot).
 
+## Install
+
+Tested on one RG40XX-H (LPDDR4). Other units may need different RAM timings (see the warning under
+[Building](#building)); a wrong one gives a dead, black boot and does no harm, so keep your stock card.
+
+1. Download `steamos-rg40xx.img.xz` and its `.sha256` from the latest release and check the hash.
+2. Write it to a microSD card of 16 GB or more (balenaEtcher, or `xzcat steamos-rg40xx.img.xz | sudo dd of=/dev/sdX bs=4M conv=fsync`).
+3. Wi-Fi: on the card's small `STEAMBOOT` partition copy `wifi.txt.example` to `wifi.txt` and fill in `ssid=` and
+   `psk=`. The first start downloads about 1 GB (Valve's Steam client and a Proton build for this CPU).
+4. Put the card in **slot 1** (TF1, the boot slot) and power on. The first start grows the root partition to the
+   card, then shows a "Setting up SteamOSXX" progress window and Steam's own update screen: allow 15-30 minutes.
+5. Sign in to Steam with the QR code. Games that need Proton use the ARMv8.0 build automatically.
+
+If the card does not boot, U-Boot shows it to a connected PC as a USB drive so it can be rewritten. Hold the power
+button for 10-15 seconds to force an off.
+
 ## Building
 
 Needs Docker (with arm64 emulation) and bash. Run from the repository root.

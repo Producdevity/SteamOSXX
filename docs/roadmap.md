@@ -16,6 +16,26 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] Automation: `sxx` (Steam DevTools + virtual test pad), `tools/smoke.sh`, screenshots, launch tracing.
 - [x] First game: Geometry Wars through Proton Experimental (ARM64) + FEX + LSE-Emu (DXVK on llvmpipe).
 
+## 0. Initial release (v0.1.0) checklist
+- [x] Image boots from a single card in slot 1 (verified 2026-11-25).
+- [x] First start installs the Steam client and the ARMv8.0 Proton itself, with a progress window; Proton is the
+      default for new games (`sxx-compat-default`).
+- [x] Steam no longer re-extracts its client on every start (`steamwebhelper.sh` patched after the updater's check).
+- [x] Real poweroff works with dev mode off (2026-11-25); dev mode is a build option (`DEV_MODE=1`), off in CI.
+- [x] Wi-Fi without secrets in the image: `wifi.txt` on the boot partition (`sxx-wifi-import`).
+- [x] CI builds U-Boot, rootfs and image; the rootfs base is published to ghcr.io; tagged builds draft a release.
+- [ ] Flash the CI-built release image (no SSH key, no Wi-Fi profile, no Steam seed) onto a card and run it from
+      power-on to a game without a PC: Wi-Fi from `wifi.txt`, first start, QR sign-in, install and launch a game.
+- [ ] First-start time and footprint: Steam's own 668 MB update plus ~1.4 GB of extraction takes 15-30 min on this
+      CPU; measure it on the release image and say so in the notes.
+- [ ] Steam settings JS (`steam-defaults.js`) no longer finds its settings message in the current client
+      ("settings message not found"): screensavers stay on. Find the message class in the new UI bundle.
+- [ ] Power menu: Restart and Shut down from Steam through the sentinels; test both on hardware.
+- [ ] Wake/sleep is not supported: the power menu must not offer Suspend (or it must do nothing harmful).
+- [ ] Release notes: tested hardware, RAM-timing warning, known issues (slow, D3D10/11), what the setup window does,
+      licences (LSE-Emu GPL-3.0, ROCKNIX kernel GPL-2.0, Valve's Steam client and Proton are downloaded, not shipped).
+- [ ] Tag `v0.1.0`, let CI attach the image, write the notes, publish.
+
 ## 1. Reproducibility (do first; many fixes were applied live)
 - [ ] Diff the running device against `overlay/` + `rootfs/` and fold in anything missing. S
 - [x] Rebuild rootfs and image from scratch, flash slot 2 from muOS, FEL-boot, restore the Steam backup,
