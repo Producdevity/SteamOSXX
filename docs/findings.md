@@ -419,6 +419,8 @@ on another computer, so game runs need the account free.
   stalled on I/O 15-23 % of the time); a warm launch is ~10 s faster. Raising the card's `read_ahead_kb` from 128 to 1024 did not help
   (75 s vs 64 s). A faster card is the I/O lever. Untried: pausing or lowering the priority of the web helper during
   launches, FEX code-cache settings, a smaller or pre-warmed Wine prefix.
+- Web-helper priority (2026-11-26): `renice 19` on every `steamwebhelper` before launching Geometry Wars gave 63 s and 72 s
+  to the game in front against 68 s unmodified. Launch time is serial startup, not CPU contention, so priority does not help.
 
 ### First-start downloads are Wi-Fi bound (2026-11-26)
 - On a weak link (-59 dBm, 26 Mbit/s receive rate) one connection to GitHub's CDN gets ~1.35 MB/s; four parallel ranged
