@@ -20,6 +20,11 @@ if [ ! -x "$root/steamrtarm64/steam" ] || [ ! -f "$root/compatibilitytools.d/$(.
   setup_ui 100 "Starting Steam..."
   setup_ui_end
 fi
+# Linux x86 games run through a Steam compatibility tool that calls sxx-fex (Valve's FEX with Steam's x86 runtime)
+if [ -d "$root/compatibilitytools.d" ]; then
+  rm -rf "$root/compatibilitytools.d/sxx-fex"
+  cp -r /usr/local/share/sxx/compat/sxx-fex "$root/compatibilitytools.d/" && chmod +x "$root/compatibilitytools.d/sxx-fex/sxx-fex-tool"
+fi
 export STEAM_RUNTIME=1 STEAM_STEAMRT_RECURSION_GUARD=1
 export LD_LIBRARY_PATH=$root/steamrtarm64:$root/steamrtarm64/panorama
 # LSE-Emu (ARMv8.0 has no LSE atomics; the client, its overlay, Proton and FEX are built with them):

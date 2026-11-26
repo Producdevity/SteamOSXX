@@ -1,0 +1,5 @@
+#!/bin/sh
+# Steam compatibility tool entry point: sxx-fex-tool <verb> -- <game command...>
+shift
+[ "$1" = "--" ] && shift
+exec /usr/local/bin/sxx-fex run -- "$@"
