@@ -63,7 +63,8 @@ notes (docs/design/*.md, docs/boot-time.md) have ideas, ranked by value over eff
 - [ ] Mesa trimming: nibOS builds Panfrost-only with no LLVM (libgallium 21 MB instead of 54 MB plus 171 MB libLLVM)
       and carries two Panfrost patches (write-combined index scan, keep BOs mapped). The G31 uses Panfrost too, but we
       rely on llvmpipe for the DXVK CPU path, so test a Panfrost-only build against the cost of losing that. M
-- [ ] Boot trimming from docs/boot-time.md that transfers to Debian: a systemd generator that reads the launcher's
+- [x] Boot is already short (2026-11-26, `systemd-analyze`: 3.8 s kernel + 7.9 s userspace, Steam session at 7.4 s); the time to Steam's UI is Steam itself, so there is nothing
+      worth trimming. Original idea, kept for reference: boot trimming from docs/boot-time.md that transfers to Debian: a systemd generator that reads the launcher's
       files ahead of time (at idle priority), masking unused generators. S
 - [ ] A/B root with automatic rollback and signed, chunked updates (minisign manifest, 16 MiB zstd chunks, `min_from`
       and state `migrate` numbers). Start in userspace: extlinux or a boot script picks the slot, a tries counter in the
@@ -105,7 +106,8 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
 - [ ] A small compatibility list: which titles run, at what FPS (`docs/games.md`). ongoing
 
 ## 3. SteamOS session parity
-- [ ] steamos-manager (with Armada's patch notes: `CpuScaling1`, `LowPowerMode1`, `BatteryChargeLimit1`,
+- [~] Settings pages checked 2026-11-26 (System, Display, Power render and work: update channel, brightness slider, dim/sleep
+      timers, scaling); only the performance and charge-limit controls are missing. steamos-manager (with Armada's patch notes: `CpuScaling1`, `LowPowerMode1`, `BatteryChargeLimit1`,
       brightness) so Steam's own settings (brightness, performance, power) work. M/L
 - [x] InputPlumber is in (controller as a Steam Deck). `handheld-keys` (volume and brightness keys) still stands; replace it only if needed. S
 - [x] Power menu: Restart verified; Shut down uses the same path and real poweroff works (dev mode is off in releases).
