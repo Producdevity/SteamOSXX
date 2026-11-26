@@ -43,6 +43,10 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
       licences (LSE-Emu GPL-3.0, ROCKNIX kernel GPL-2.0, Valve's Steam client and Proton are downloaded, not shipped).
 - [ ] Tag `v0.1.0`, let CI attach the image, write the notes, publish.
 
+- [ ] Compressed-memory experiments (docs/findings.md, CRAM section): lz4 vs zstd, zram multi-comp recompression of
+      idle pages, DAMON_RECLAIM, zram writeback with a write limit. Needs `ZRAM_TRACK_ENTRY_ACTIME` and DAMON in
+      `kernel/build.sh`. CRAM itself needs hardware this board does not have. M
+
 ## 1. Reproducibility (do first; many fixes were applied live)
 - [ ] Diff the running device against `overlay/` + `rootfs/` and fold in anything missing. S
 - [x] Rebuild rootfs and image from scratch, flash slot 2 from muOS, FEL-boot, restore the Steam backup,

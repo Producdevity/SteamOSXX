@@ -361,3 +361,20 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
   chosen by hand afterwards sticks. Verified: Geometry Wars set to `proton-experimental` is back on
   `proton-armv8-proton-11.0-3` within 10 s. DroidDeck's `steam-compatibility` does the same job by rewriting
   config.vdf while Steam is stopped (its `valve_picks` and `plan_mapping`).
+
+### Compressed RAM (CRAM) and what applies to a 1 GB handheld (2026-11-26)
+- CRAM is Gregory Price's (Meta) RFC for a compressed-RAM service on a private NUMA node (`N_MEMORY_PRIVATE`,
+  `mm/cram.c`), posted as RFC v4 (Feb 2026) and v5 (Jul 2026); not merged. It assumes a device that over-reports its
+  capacity with byte-addressable compressed memory (first driver: CXL). Pages stay mapped read-only so reads need no
+  fault or decompression; a write faults and promotes the page to DRAM. Reported: ~98 % of plain-DRAM throughput on
+  read-only emulation, 5.4-37x zram at 2-20 % writes. Kairui Song's per-page costs: fault 1.92 us, swap management
+  1.04 us, LZO decompression 0.32 us, so the fault, not the decompression, is what it removes.
+- Verdict: not usable on the H700. There is no compressing device, and a CPU-side software version has no way to
+  keep compressed pages readable in place, so it would reduce to zswap-style fault-and-decompress. Revisit if the
+  kernel grows a software backend.
+- What applies today, with what our kernel (7.2.0-sxx) already has: zram with lz4/zstd/lzo and `ZRAM_MULTI_COMP`
+  (recompress idle pages with a stronger algorithm), `ZRAM_WRITEBACK`, MGLRU (`min_ttl_ms=1000` is set), PSI. Missing:
+  `ZRAM_TRACK_ENTRY_ACTIME` (age-based idle marking) and `DAMON` / `DAMON_RECLAIM`, both cheap to add in `kernel/build.sh`.
+- Test plan (fixed workload, compare PSI `memory full`, swap-in rate, OOM events, `mm_stat` ratio): current zstd zram;
+  lz4 primary with zstd recompression of idle pages; DAMON_RECLAIM with a low `min_age`; zram writeback of idle pages
+  to the SD card with a `writeback_limit` to bound flash wear.
