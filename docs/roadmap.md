@@ -50,6 +50,28 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
       idle pages, DAMON_RECLAIM, zram writeback with a write limit. Needs `ZRAM_TRACK_ENTRY_ACTIME` and DAMON in
       `kernel/build.sh`. CRAM itself needs hardware this board does not have. M
 
+## Ideas from nibOS (reviewed 2026-11-26)
+[nibOS](https://github.com/abradburne/nibos) targets the Anbernic RG DS+ (RK3568), runs Arch Linux ARM with native
+emulators and has no Steam, Proton or FEX. Not a base for us (different distro and SoC, young project), but its design
+notes (docs/design/*.md, docs/boot-time.md) have ideas, ranked by value over effort:
+- [ ] State and data kept apart from the root: a persistent data partition for Steam, Proton, prefixes and saves, and a
+      small state partition for Wi-Fi and settings, so a reflash keeps everything (answers "users must reflash"). M
+- [ ] Pre-seed or background-fetch Steam and Proton: ship them on the data partition or fetch them in a `Nice=19`,
+      idle-I/O unit with chunked, hash-verified, resumable downloads (their updater pattern), removing the 1.1 GB
+      first-start wait. M
+- [ ] Mesa trimming: nibOS builds Panfrost-only with no LLVM (libgallium 21 MB instead of 54 MB plus 171 MB libLLVM)
+      and carries two Panfrost patches (write-combined index scan, keep BOs mapped). The G31 uses Panfrost too, but we
+      rely on llvmpipe for the DXVK CPU path, so test a Panfrost-only build against the cost of losing that. M
+- [ ] Boot trimming from docs/boot-time.md that transfers to Debian: a systemd generator that reads the launcher's
+      files ahead of time (at idle priority), masking unused generators. S
+- [ ] A/B root with automatic rollback and signed, chunked updates (minisign manifest, 16 MiB zstd chunks, `min_from`
+      and state `migrate` numbers). Start in userspace: extlinux or a boot script picks the slot, a tries counter in the
+      U-Boot environment, "mark good" after Steam's UI has been up 30 s. Skip their SPL patches (RK3568-specific). L
+- [ ] Read-only root with a writable overlay on the state partition, which makes slot images reproducible. M
+- [ ] SPL Falcon boot (skip U-Boot proper) for boot time: needs an Allwinner port, boot time is not our main pain. L
+Not copied: Arch as the base, lz4-only zram (our lzo-rle plus idle zstd keeps the capacity), 3 GiB root slots (too big
+once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
+
 ## 1. Reproducibility (do first; many fixes were applied live)
 - [ ] Diff the running device against `overlay/` + `rootfs/` and fold in anything missing. S
 - [x] Rebuild rootfs and image from scratch, flash slot 2 from muOS, FEL-boot, restore the Steam backup,
