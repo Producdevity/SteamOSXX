@@ -60,6 +60,10 @@ cat > $work/boot/wifi.txt.example <<EOF
 ssid=YourNetworkName
 psk=YourPassword
 EOF
+cat > $work/boot/authorized_keys.example <<EOF
+# Optional: for SSH access, put your public key(s) here, one per line (ssh-ed25519 AAAA... you@host), and rename this
+# file to authorized_keys. They are installed for root and steam at the next boot. adb over USB works without it.
+EOF
 boot_mb=256
 truncate -s ${boot_mb}M $work/boot.img
 mkfs.vfat -F 32 -n STEAMBOOT -i 53544d52 $work/boot.img >/dev/null

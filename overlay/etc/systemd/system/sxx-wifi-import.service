@@ -1,10 +1,11 @@
 [Unit]
-Description=Join the Wi-Fi network from wifi.txt on the boot partition
+Description=Join the Wi-Fi network from wifi.txt and install SSH keys from authorized_keys on the boot partition
 After=NetworkManager.service boot-firmware.mount
 Wants=NetworkManager.service
 
 [Service]
 Type=oneshot
+ExecStartPre=-/usr/local/sbin/sxx-ssh-import
 ExecStart=/usr/local/sbin/sxx-wifi-import
 
 [Install]

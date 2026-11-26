@@ -58,6 +58,8 @@ Tested on one RG40XX-H (LPDDR4). Other units may need different RAM timings (see
 4. Put the card in **slot 1** (TF1, the boot slot) and power on. The first start grows the root partition to the
    card, then shows a "Setting up SteamOSXX" progress window and Steam's own update screen: allow up to an hour (about 58 minutes on a home connection in the first test).
 5. Sign in to Steam with the QR code. Games that need Proton use the ARMv8.0 build automatically.
+6. Optional SSH: copy `authorized_keys.example` to `authorized_keys` on the same partition and paste your public key;
+   it is installed at the next boot (`ssh root@rg40xx.local`).
 
 If the card does not boot, U-Boot shows it to a connected PC as a USB drive so it can be rewritten. Hold the power
 button for 10-15 seconds to force an off.

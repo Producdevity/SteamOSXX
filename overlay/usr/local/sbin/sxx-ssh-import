@@ -1,0 +1,20 @@
+#!/bin/sh
+# Installs the public keys in authorized_keys on the boot partition (FAT, writable from any PC) for root and the steam
+# user, so SSH works without adb. One key per line, as in ~/.ssh/authorized_keys. Runs at every boot (from
+# sxx-wifi-import.service) and imports again when the file changes.
+f=/boot/firmware/authorized_keys
+state=/var/lib/sxx/ssh.sha
+[ -f "$f" ] || exit 0
+sum=$(sha256sum "$f" | cut -d' ' -f1)
+[ "$(cat "$state" 2>/dev/null)" = "$sum" ] && exit 0
+keys=$(mktemp)
+tr -d '\r' < "$f" | grep -E '^(ssh-|ecdsa-|sk-)' > "$keys"
+[ -s "$keys" ] || { echo "sxx-ssh-import: no public keys in $f"; rm -f "$keys"; exit 1; }
+for home in /root /home/steam; do
+  install -d -m 700 "$home/.ssh"
+  install -m 600 "$keys" "$home/.ssh/authorized_keys"
+done
+chown -R steam:steam /home/steam/.ssh
+rm -f "$keys"
+mkdir -p /var/lib/sxx && echo "$sum" > "$state"
+echo "sxx-ssh-import: installed $(tr -d '\r' < "$f" | grep -cE '^(ssh-|ecdsa-|sk-)') key(s)"

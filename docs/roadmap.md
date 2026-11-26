@@ -38,7 +38,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] The pad is a native Steam Deck controller (28de:1205 over USB/IP, InputPlumber; own kernel 7.2.0-sxx), verified
       2026-11-26: Deck glyphs, no "External Controller Translation" dialog, game test passes on the CI image.
 - [ ] `sxx-gametest` should dismiss Steam's hint dialogs. Rumble through InputPlumber is untested.
-- [ ] Power menu: Restart and Shut down from Steam through the sentinels; test both on hardware.
+- [x] Power menu: Restart verified on hardware (2026-11-26: `SteamClient.System.RestartPC()` reboots). Shut down uses
+      the same sentinel path, and real poweroff was verified earlier. Sleep is refused (`AllowSuspend=no`) until TF-A
+      suspend exists.
 - [ ] Wake/sleep is not supported: the power menu must not offer Suspend (or it must do nothing harmful).
 - [ ] Release notes: tested hardware, RAM-timing warning, known issues (slow, D3D10/11), what the setup window does,
       licences (LSE-Emu GPL-3.0, ROCKNIX kernel GPL-2.0, Valve's Steam client and Proton are downloaded, not shipped).
