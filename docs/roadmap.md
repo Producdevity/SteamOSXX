@@ -69,8 +69,8 @@ notes (docs/design/*.md, docs/boot-time.md) have ideas, ranked by value over eff
 - [x] In-place updater (2026-11-26, v0.4.0): `sxx-update` (check/apply, wired to Steam's Check For Updates through
       `steamos-update`) stages the release's root and boot files on the data partition; the initramfs writes them at the next
       boot (root first, boot files last through rename, `pending` marker makes an interrupted install repeat). Verified from
-      Steam's UI on hardware, twice. Still open: A/B root with automatic rollback and signed, chunked updates (minisign
-      manifest, 16 MiB zstd chunks, `min_from` and state `migrate` numbers): a bad release cannot be rolled back yet, and the
+      Steam's UI on hardware, twice. Rollback added (2026-11-26): the last installed image is kept, a release is on trial until Steam's UI has been up 30 s, three failed boots reinstall the previous one (tested with a deliberately broken release). Still open: A/B root and signed, chunked updates (minisign
+      manifest, 16 MiB zstd chunks, `min_from` and state `migrate` numbers): the
       install is ten minutes of SD writes (reading to skip unchanged blocks is no faster on this card). L
 - [ ] Read-only root with a writable overlay on the state partition, which makes slot images reproducible. M
 - [ ] SPL Falcon boot (skip U-Boot proper) for boot time: needs an Allwinner port, boot time is not our main pain. L

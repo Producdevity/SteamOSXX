@@ -80,7 +80,7 @@ apply() {
   rm -f "$part" "$STATE/boot.img"
   sync
   echo "$tag" > "$STATE/pending.tmp" && sync && mv "$STATE/pending.tmp" "$STATE/pending" && sync
-  say "$tag staged; it installs at the next boot (about 3 minutes, do not power off)"
+  say "$tag staged; it installs at the next restart (about 10 minutes, do not power off)"
 }
 
 # Steam kills a steamos-update check after about five minutes, and a 340 MB download over this Wi-Fi can take longer: the

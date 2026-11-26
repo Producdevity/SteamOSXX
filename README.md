@@ -29,6 +29,7 @@ brings KMS, Panfrost, PipeWire, user namespaces and SysV IPC.
 | Controls | yes | the built-in pad appears to Steam as a native Steam Deck controller (28de:1205, via InputPlumber and our kernel's USB/IP and HIDRAW); volume keys, menu+volume brightness |
 | Memory (1 GB) | managed | zstd zram at 2x RAM, earlyoom, MGLRU thrash guard, and a guard that ends a game on sustained memory stalls |
 | Wi-Fi | yes | RTL8821CS (rtw88), NetworkManager |
+| Bluetooth | yes | the same chip, bluez; Steam's Bluetooth page scans (pairing not yet tried), PipeWire audio |
 | Sleep / wake | not yet | needs TF-A's H616 PSCI system-suspend support |
 | gamescope | emulated | real gamescope runs on llvmpipe with a small shim but costs ~90 % of a core and crashes Steam here (docs/findings.md); Steam runs in its gamescope mode against Xorg + `sxx-focus` |
 | Standalone boot from slot 1 | yes | the same image boots from a card in slot 1 with no muOS or PC (2026-11-25); development still uses slot 2 through FEL |
@@ -70,7 +71,7 @@ From the first release with an updater (the one after v0.3.0), update from Steam
 It downloads the newest release (about 340 MB), unpacks it to the data partition and installs it at the next restart,
 which takes about three minutes with a progress count on screen; do not power off. Your games, Proton, Steam login and the
 Wi-Fi and SSH settings stay (they live on the data partition, `sxxdata`, mounted at `/home`). From a shell: `sxx-update check`
-and `sxx-update apply`, then restart. A release that cannot be installed this way says so in its notes and needs a reflash.
+and `sxx-update apply`, then restart. A release that cannot be installed this way says so in its notes and needs a reflash. A new release that fails to start three times is replaced by the previous one automatically.
 
 Reflashing works too: write the new image to the same card, the same way. The data partition starts right after the 3 GiB
 root, so a flash only rewrites the boot and root partitions and the first boot after it reuses the data partition. This holds
