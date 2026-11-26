@@ -123,6 +123,8 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
 - [ ] Sleep/wake: ROCKNIX PR #3316 approach (TF-A `SYSTEM_SUSPEND` + SRAM stub built for this unit's DRAM
       type and timings, `opp-suspend`, axp20x-pek wake, phy/mmc fixes). Test only with `rtcwake` alarms. M/L
 - [x] Brightness from Steam's slider (Steam writes the backlight; udev rule for access).
+- [x] Bluetooth (2026-11-26): the RTL8821CS controller was already `hci0`; bluez and PipeWire's Bluetooth audio are in the image and
+      Steam's Bluetooth page scans (pairing with a real headset or pad not tested yet). S
 - [ ] stick RGB LEDs, rumble (FF on the pad),
       headphone-jack switching, HDMI out, Bluetooth (RTL8821CS), charge limit. S each
 - [ ] CPU/GPU governors (schedutil, Panfrost devfreq), thermals, battery life measurement. S/M
