@@ -1,6 +1,7 @@
 [Unit]
 Description=Steam Big Picture session (steam user, Xorg on tty7)
-After=systemd-user-sessions.service network.target firstboot.service
+After=systemd-user-sessions.service network.target firstboot.service inputplumber.service
+Wants=inputplumber.service
 Conflicts=getty@tty7.service
 StartLimitIntervalSec=0
 

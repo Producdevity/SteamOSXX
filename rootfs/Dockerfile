@@ -57,3 +57,7 @@ RUN useradd -m -s /bin/bash -G sudo,video,input,audio,render,netdev steam \
  && passwd -d root && passwd -d steam \
  && rm -f /etc/ssh/ssh_host_* \
  && systemctl disable adbd.service ssh.service 2>/dev/null; true
+
+# InputPlumber (built by CI, see the image layer) links these; acl lets it hide the raw pad from other readers.
+RUN apt-get update && apt-get install -y --no-install-recommends libevdev2 libiio0 acl \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*

@@ -10,6 +10,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  kernel:
+    uses: ./.github/workflows/kernel.yml
+  inputplumber:
+    uses: ./.github/workflows/inputplumber.yml
+
   uboot:
     runs-on: ubuntu-24.04
     steps:
@@ -21,6 +26,7 @@ jobs:
         with: {name: uboot, path: out/uboot/*.bin}
 
   rootfs:
+    needs: [kernel, inputplumber]
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -37,6 +43,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: ROCKNIX kernel, modules and firmware
         run: bash tools/fetch-rocknix.sh
+      - uses: actions/download-artifact@v4
+        with: {name: kernel, path: out/dl-kernel}
+      - uses: actions/download-artifact@v4
+        with: {name: inputplumber, path: out/dl-inputplumber}
+      - name: Our kernel (7.2.0-sxx) and InputPlumber, where the image build looks for them
+        run: |
+          mkdir -p cache/kernel cache/inputplumber
+          tar -xJf out/dl-kernel/kernel.tar.xz -C cache/kernel
+          tar -xJf out/dl-inputplumber/inputplumber.tar.xz -C cache/inputplumber
       # Release builds carry no SSH key or Wi-Fi profile: adb over USB until the user adds them.
       - run: mkdir -p secrets/nm && touch secrets/authorized_keys
       - run: bash tools/build-rootfs.sh
@@ -48,8 +63,8 @@ jobs:
           name: rootfs
           path: |
             out/rootfs.tar
-            cache/boot/KERNEL
-            cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb
+            cache/kernel/KERNEL
+            cache/kernel/dtbs/sun50i-h700-anbernic-rg40xx-*.dtb
           retention-days: 3
           compression-level: 0
 

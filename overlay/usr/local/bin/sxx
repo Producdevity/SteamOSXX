@@ -14,8 +14,10 @@ import base64
 import fcntl
 import json
 import os
+import shutil
 import socket
 import struct
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -207,9 +209,41 @@ def vpad_daemon():
                 time.sleep(0.12)
 
 
+IP_BUTTONS = {"a": "South", "b": "East", "x": "West", "y": "North", "lb": "LeftBumper", "rb": "RightBumper",
+              "start": "Start", "select": "Select", "guide": "Guide", "ls": "LeftStick", "rs": "RightStick",
+              "up": "DPadUp", "down": "DPadDown", "left": "DPadLeft", "right": "DPadRight"}
+IP_CALL = ["busctl", "call", "org.shadowblip.InputPlumber", "/org/shadowblip/InputPlumber/CompositeDevice0",
+           "org.shadowblip.Input.CompositeDevice", "SendEvent", "sv"]
+
+
+def ip_press(button, ms):
+    """One press through InputPlumber's composite device, the path the built-in pad takes to Steam's Deck controller."""
+    for down in ("true", "false"):
+        r = subprocess.run(IP_CALL + ["Gamepad:Button:" + IP_BUTTONS[button], "b", down], capture_output=True)
+        if r.returncode:
+            return False
+        if down == "true":
+            time.sleep(ms / 1000)
+    time.sleep(0.12)
+    return True
+
+
 def pad(tokens):
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-    s.sendto(" ".join(tokens).encode(), VPAD_SOCK)
+    # Buttons go through InputPlumber when it runs (the real controller path); sticks, triggers and a missing
+    # InputPlumber use the uinput test pad.
+    rest = []
+    for tok in tokens:
+        parts = tok.split(":")
+        if parts[0] == "wait":
+            time.sleep(int(parts[1]) / 1000)
+            continue
+        btn, ms = (parts[1], int(parts[2])) if parts[0] == "hold" else (parts[0], 80)
+        if btn in IP_BUTTONS and shutil.which("busctl") and ip_press(btn, ms):
+            continue
+        rest.append(tok)
+    if rest:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        s.sendto(" ".join(rest).encode(), VPAD_SOCK)
 
 
 def main(argv):

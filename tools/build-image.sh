@@ -30,8 +30,14 @@ if [ -f "$seed" ]; then
 fi
 
 echo "== boot partition"
-cp cache/boot/KERNEL $work/boot/KERNEL
-cp cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb $work/boot/dtbs/
+# Our kernel (kernel/build.sh, 7.2.0-sxx: HIDRAW, UHID, USB/IP) when cache/kernel has it, else ROCKNIX's stock 7.2.0.
+if [ -f cache/kernel/KERNEL ]; then
+  cp cache/kernel/KERNEL $work/boot/KERNEL
+  cp cache/kernel/dtbs/sun50i-h700-anbernic-rg40xx-*.dtb $work/boot/dtbs/
+else
+  cp cache/boot/KERNEL $work/boot/KERNEL
+  cp cache/boot/device_trees/sun50i-h700-anbernic-rg40xx-*.dtb $work/boot/dtbs/
+fi
 # Logging initramfs: writes bootlog-N.txt to this partition, then switches to the real root.
 # (rdinit=/no-initramfs, which skips ROCKNIX's built-in initramfs, reset the board; this boots.)
 (cd /tmp && apt-get download -qq busybox-static:arm64 >/dev/null 2>&1 && dpkg-deb -x busybox-static_*.deb bb)
