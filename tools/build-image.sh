@@ -79,7 +79,8 @@ mke2fs -q -t ext4 -L steamroot -m 1 -E root_owner=0:0 -d $work/root $work/root.i
 
 echo "== disk image"
 out=out/steamos-rg40xx.img
-total_mb=$(( 16 + boot_mb + root_mb + 1 ))
+# The image must end exactly where the root ends: flashing it must not touch the data partition that follows.
+total_mb=$(( 16 + boot_mb + root_mb ))
 rm -f $out && truncate -s ${total_mb}M $out
 UBOOT=${UBOOT:-out/uboot/card.bin}
 [ -f "$UBOOT" ] || UBOOT=cache/uboot.bin
