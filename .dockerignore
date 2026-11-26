@@ -1,5 +1,7 @@
 cache/*
 !cache/overlay
+!cache/kernel
+!cache/inputplumber
 out/
 .git
 secrets/id_ed25519*
