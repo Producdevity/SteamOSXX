@@ -26,7 +26,7 @@ brings KMS, Panfrost, PipeWire, user namespaces and SysV IPC.
 | Games | yes, slow | Proton ARM64 (Valve's, or [proton-armv8](https://github.com/sunshineinabox/proton-armv8)) + FEX; Direct3D on the GPU through WineD3D/Panfrost (D3D10/11 need DXVK on llvmpipe, slow). See [docs/games.md](docs/games.md) |
 | SteamOS session | partial | gamescope's focus protocol on Xorg (`sxx-focus`): games in front, Steam button menu over them; power menu; brightness slider; volume |
 | Audio | yes | H616 codec through PipeWire in the session; speaker and headphone jack |
-| Controls | yes | `H700 Gamepad` through Steam Input (in Big Picture and in games); volume keys, menu+volume brightness |
+| Controls | yes | the built-in pad appears to Steam as a native Steam Deck controller (28de:1205, via InputPlumber and our kernel's USB/IP and HIDRAW); volume keys, menu+volume brightness |
 | Memory (1 GB) | managed | zstd zram at 2x RAM, earlyoom, MGLRU thrash guard, and a guard that ends a game on sustained memory stalls |
 | Wi-Fi | yes | RTL8821CS (rtw88), NetworkManager |
 | Sleep / wake | not yet | needs TF-A's H616 PSCI system-suspend support |

@@ -35,8 +35,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] Steam settings JS matches the current client again (the screensaver wallpapers had covered the launch dialog).
 - [x] Release image verified end to end (2026-11-25): QR sign-in, install Geometry Wars, launch under the default
       ARMv8 Proton, Steam menu over the game and back, quit to Big Picture.
-- [ ] Present the pad as a native Steam Deck controller (28de:1205 over uhid) so Steam drops the "External Controller
-      Translation" dialog and uses Deck glyphs/layouts. `sxx-gametest` should also dismiss Steam's hint dialogs.
+- [x] The pad is a native Steam Deck controller (28de:1205 over USB/IP, InputPlumber; own kernel 7.2.0-sxx), verified
+      2026-11-26: Deck glyphs, no "External Controller Translation" dialog, game test passes on the CI image.
+- [ ] `sxx-gametest` should dismiss Steam's hint dialogs. Rumble through InputPlumber is untested.
 - [ ] Power menu: Restart and Shut down from Steam through the sentinels; test both on hardware.
 - [ ] Wake/sleep is not supported: the power menu must not offer Suspend (or it must do nothing harmful).
 - [ ] Release notes: tested hardware, RAM-timing warning, known issues (slow, D3D10/11), what the setup window does,
