@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 if [ ! -f /.dockerenv ]; then
-  exec env MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 -e STEAM_SEED -e UBOOT -e DTB -v "$(pwd -W 2>/dev/null || pwd):/w" -w /w \
+  exec env MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 -e STEAM_SEED -e UBOOT -e DTB -e SXX_VERSION -v "$(pwd -W 2>/dev/null || pwd):/w" -w /w \
     debian:trixie bash -c 'export DEBIAN_FRONTEND=noninteractive; dpkg --add-architecture arm64; apt-get update -qq >/dev/null;
       apt-get install -y -qq e2fsprogs dosfstools mtools fdisk cpio >/dev/null 2>&1; tools/build-image.sh'
 fi
@@ -17,6 +17,8 @@ rm -rf $work && mkdir -p $work/root $work/boot/extlinux $work/boot/dtbs
 echo "== unpacking rootfs"
 tar -C $work/root -xpf out/rootfs.tar --numeric-owner
 rm -f $work/root/.dockerenv
+# the release tag when CI builds one (sxx-update compares against it); "dev" is never offered an update
+echo "${SXX_VERSION:-dev}" > $work/root/etc/sxx-release
 # docker export leaves the container-managed files empty
 cp overlay/etc/hostname overlay/etc/hosts $work/root/etc/
 rm -f $work/root/etc/resolv.conf && ln -s ../run/NetworkManager/resolv.conf $work/root/etc/resolv.conf

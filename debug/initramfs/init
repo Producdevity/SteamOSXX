@@ -27,6 +27,46 @@ note "block devices: $(ls /sys/class/block | tr '\n' ' ')"
 note "panels/drm: $(ls /sys/class/drm 2>/dev/null | tr '\n' ' ') backlight: $(ls /sys/class/backlight 2>/dev/null)"
 note "udc: $(ls /sys/class/udc 2>/dev/null)  net: $(ls /sys/class/net | tr '\n' ' ')"
 
+# OS update staged by sxx-update (on the data partition): write the new root over the old one, then the new boot files.
+# Nothing is mounted from the root yet, so it can be overwritten; if power fails midway, "pending" is still there and the
+# next boot does it again. The boot files go last, each through a temporary name and a rename.
+show() { echo "$*" > /dev/tty0 2>/dev/null; note "$*"; }
+data=$(findfs LABEL=sxxdata 2>/dev/null)
+u=/mnt/data/.sxx/update
+if [ -n "$boot" ] && [ -n "$data" ] && mkdir -p /mnt/data && mount -t ext4 -o rw "$data" /mnt/data 2>/dev/null && [ -f $u/pending ] && [ -f $u/root.img ] && [ -d $u/boot ]; then
+  tries=$(cat $u/tries 2>/dev/null || echo 0)
+  echo $((tries + 1)) > $u/tries; sync
+  newroot=${boot%1}2
+  if [ "$tries" -ge 3 ]; then
+    show "update $(cat $u/pending) failed $tries times, giving up"
+    rm -f $u/pending
+  elif [ -b "$newroot" ]; then
+    show "Installing SteamOSXX $(cat $u/pending). Do not power off."
+    mb=$(( $(stat -c %s $u/root.img) / 1048576 )); i=0; ok=1
+    while [ $i -lt $mb ]; do
+      dd if=$u/root.img of=$newroot bs=1M skip=$i seek=$i count=64 conv=notrunc status=none 2>>"$log" || ok=0
+      i=$((i + 64))
+      echo "SteamOSXX update: $((i * 100 / mb)) %" > /dev/tty0 2>/dev/null
+    done
+    sync
+    if [ $ok = 1 ]; then
+      ( cd $u/boot && find . -type f ) | while read -r f; do
+        case "$f" in ./extlinux/*|./KERNEL) continue;; esac
+        mkdir -p "/mnt/boot/$(dirname "$f")"; cp "$u/boot/$f" "/mnt/boot/$f.new" && mv "/mnt/boot/$f.new" "/mnt/boot/$f"
+      done
+      cp $u/boot/KERNEL /mnt/boot/KERNEL.new && sync && mv /mnt/boot/KERNEL.new /mnt/boot/KERNEL
+      cp $u/boot/extlinux/extlinux.conf /mnt/boot/extlinux/extlinux.conf.new && sync && mv /mnt/boot/extlinux/extlinux.conf.new /mnt/boot/extlinux/extlinux.conf
+      sync
+      show "SteamOSXX $(cat $u/pending) installed, restarting"
+      rm -f $u/pending $u/tries; rm -rf $u/root.img $u/boot $u/latest.json; sync
+      umount /mnt/data; umount /mnt/boot; sync
+      reboot -f
+    fi
+    show "update write failed, see the boot log"
+  fi
+fi
+umount /mnt/data 2>/dev/null
+
 root=
 for i in $(seq 1 40); do
   root=$(findfs LABEL=steamroot 2>/dev/null) && break

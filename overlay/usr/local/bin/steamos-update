@@ -1,5 +1,5 @@
 #!/bin/bash
-# Steam (-steamos3) OS update hook. Exit 7 tells the client there is no OS update.
-# Interface from ChimeraOS gamescope-session-steam (MIT).
-for a in "$@"; do [ "$a" = --supports-duplicate-detection ] && exit 0; done
-exit 7
+# Steam (-steamos3) OS update hook (System > Software Updates): exit 0 = update available / done, 7 = none.
+# Interface from ChimeraOS gamescope-session-steam (MIT). The work is in sxx-update.
+[ "$(id -u)" = 0 ] || exec sudo -n /usr/local/sbin/sxx-update steamos "$@"
+exec /usr/local/sbin/sxx-update steamos "$@"
