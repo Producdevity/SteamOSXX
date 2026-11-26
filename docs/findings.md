@@ -410,3 +410,10 @@ on another computer, so game runs need the account free.
   stalled on I/O 15-23 % of the time); a warm launch is ~10 s faster. Raising the card's `read_ahead_kb` from 128 to 1024 did not help
   (75 s vs 64 s). A faster card is the I/O lever. Untried: pausing or lowering the priority of the web helper during
   launches, FEX code-cache settings, a smaller or pre-warmed Wine prefix.
+
+### First-start downloads are Wi-Fi bound (2026-11-26)
+- On a weak link (-59 dBm, 26 Mbit/s receive rate) one connection to GitHub's CDN gets ~1.35 MB/s; four parallel ranged
+  connections add only ~25 % (~1.7 MB/s combined). Yesterday's first start saw ~0.4 MB/s for Proton. The roughly
+  1.1 GB first-start download (Steam client plus Proton) is therefore link-limited: parallel downloads or a mirror
+  would not change much. Levers: a better link (5 GHz), less to download (see the nibOS ideas in the roadmap:
+  pre-seeding Steam/Proton on a data partition), or both.
