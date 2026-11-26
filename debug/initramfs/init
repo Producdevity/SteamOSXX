@@ -56,6 +56,9 @@ if [ -f $u/pending ] && [ -f $u/root.img ] && [ -d $u/boot ] && grep -q ' /mnt/d
     rm -f $u/pending
   elif [ -b "$newroot" ]; then
     show "Installing SteamOSXX $(cat $u/pending). Do not power off."
+    # the release being replaced, read before it is overwritten: only an image of that release is a valid rollback target
+    oldrel=; mkdir -p /mnt/oldroot
+    if mount -t ext4 -o ro,noload "$newroot" /mnt/oldroot 2>/dev/null; then oldrel=$(cat /mnt/oldroot/etc/sxx-release 2>/dev/null); umount /mnt/oldroot; fi
     mb=$(( $(stat -c %s $u/root.img) / 1048576 )); i=0; ok=1
     while [ $i -lt $mb ]; do
       dd if=$u/root.img of=$newroot bs=1M skip=$i seek=$i count=64 conv=notrunc status=none 2>>"$log" || ok=0
@@ -73,7 +76,8 @@ if [ -f $u/pending ] && [ -f $u/root.img ] && [ -d $u/boot ] && grep -q ' /mnt/d
       sync
       show "SteamOSXX $(cat $u/pending) installed, restarting"
       # keep what was just installed (the rollback target of the next update) and put the release on trial
-      rm -rf $u/previous; [ -d $u/installed ] && mv $u/installed $u/previous
+      rm -rf $u/previous
+      if [ -d $u/installed ] && [ "$(cat $u/installed/tag 2>/dev/null)" = "$oldrel" ]; then mv $u/installed $u/previous; else rm -rf $u/installed; fi
       mkdir -p $u/installed && mv $u/root.img $u/installed/root.img && mv $u/boot $u/installed/boot && cp $u/pending $u/installed/tag
       echo 0 > $u/trial; rm -f $u/pending $u/tries $u/latest.json; sync
       umount /mnt/data; umount /mnt/boot; sync
