@@ -16,6 +16,7 @@ matches:
 
 source_devices:
   - group: gamepad
+    capability_map_id: h700
     evdev:
       name: H700 Gamepad
       phys_path: rocknix-singleadc-joypad/input0
