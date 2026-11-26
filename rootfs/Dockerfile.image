@@ -9,6 +9,8 @@ COPY rootfs/src/padmap.c /usr/local/src/padmap.c
 RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
 COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
 RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+COPY rootfs/src/memload.c /usr/local/src/memload.c
+RUN gcc -O2 -Wall -o /usr/local/bin/memload /usr/local/src/memload.c
 COPY rootfs/src/vk-fake-drm.c /usr/local/src/vk-fake-drm.c
 RUN mkdir -p /usr/local/lib/sxx && gcc -O2 -Wall -shared -fPIC -o /usr/local/lib/sxx/vk-fake-drm.so /usr/local/src/vk-fake-drm.c -ldl
 COPY rootfs/src/reach-guard.c /usr/local/src/reach-guard.c
@@ -27,7 +29,7 @@ RUN chmod 700 /root/.ssh /home/steam/.ssh && chown -R steam:steam /home/steam/.s
  && find /etc/systemd /etc/ssh/sshd_config.d /etc/NetworkManager/conf.d /etc/steam-session.conf -type f -exec chmod 644 {} + \
  && chmod +x /usr/local/bin/* /usr/local/sbin/* /usr/bin/inputplumber \
  && systemctl enable ssh.service NetworkManager.service usb-gadget.service firstboot.service \
-      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-wifi-import.service inputplumber.service \
+      wifi-kick.service steam-session.service systemd-timesyncd.service reach-guard.service earlyoom.service handheld-keys.service sxx-wifi-import.service inputplumber.service sxx-zram-recompress.service \
  && if [ "$DEV_MODE" = 1 ]; then \
       systemctl enable sxx-vpad.service; \
       ln -sfn /usr/lib/systemd/system/reboot.target /etc/systemd/system/poweroff.target; \

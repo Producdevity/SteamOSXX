@@ -378,3 +378,25 @@ Launched from Steam, renders its intro. Four separate blockers, in the order the
 - Test plan (fixed workload, compare PSI `memory full`, swap-in rate, OOM events, `mm_stat` ratio): current zstd zram;
   lz4 primary with zstd recompression of idle pages; DAMON_RECLAIM with a low `min_age`; zram writeback of idle pages
   to the SD card with a `writeback_limit` to bound flash wear.
+
+### zram algorithm and idle-page recompression (2026-11-26)
+`tools/membench.sh` reboots for each setting and runs `sxx-membench`: a synthetic load (`rootfs/src/memload.c`: 480 MB,
+35 % random pages, 30 % hot, 200 s, beside idle Steam) or a real game. Steam refuses a launch while the account plays
+on another computer, so game runs need the account free.
+
+| setting | workload | result | PSI full | swap out (pages) | zram ratio | kswapd CPU |
+|---|---|---|---|---|---|---|
+| zstd | synthetic | 2.26 M touches/s | 3.6 s | 85 k | 4.6 | 11.0 s |
+| lz4 | synthetic | 2.22 M | 2.4 s | 189 k | 3.4 | 6.6 s |
+| lzo-rle | synthetic | 2.26 M | 1.3 s | 131 k | 3.3 | 4.1 s |
+| lzo-rle + zstd recompress | synthetic (2 runs) | 2.27 M, 2.25 M | 1.1 s, 1.6 s | 94 k, 126 k | 4.6, 4.7 | 4.1 s, 4.7 s |
+| zstd | Geometry Wars | front in 64 s | 8.1 s | 132 k | 4.9 | 19.1 s |
+| lzo-rle + zstd recompress | Geometry Wars | front in 67 s | 4.5 s | 160 k | 4.8 | 10.2 s |
+
+- Throughput is unchanged (the hot set stays resident); the settings differ in stalls, CPU and capacity. zstd alone fits
+  ~40 % more than lzo-rle/lz4 but stalls ~3x as long and spends ~2.7x the reclaim CPU.
+- lzo-rle live plus zstd recompression of idle pages (`sxx-zram-recompress`: mark all idle, wait 60 s, recompress what
+  stayed idle, niced at low CPU weight) keeps zstd's ratio with lzo-rle's stalls: -45 % stall time and -47 % kswapd CPU
+  on the real game for the same start time. The service itself used ~4 % of one core on average during heavy swapping.
+  Now the default (`zram-generator.conf`: `compression-algorithm = lzo-rle zstd`).
+- Not yet tried: DAMON_RECLAIM, zram writeback to the SD card, tuning the recompress interval and threshold.

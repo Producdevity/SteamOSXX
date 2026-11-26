@@ -54,6 +54,7 @@ dev "set -e
   missing=\$(for p in $pkgs; do dpkg -s \$p >/dev/null 2>&1 || echo \$p; done)
   [ -z \"\$missing\" ] || { echo \"push-live: installing \$missing\"; apt-get update -qq && apt-get install -y -qq --no-install-recommends -o Dpkg::Options::=--force-confold \$missing; }
   gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
+  gcc -O2 -Wall -o /usr/local/bin/memload /usr/local/src/memload.c
   mkdir -p /usr/local/lib/sxx && gcc -O2 -Wall -shared -fPIC -o /usr/local/lib/sxx/vk-fake-drm.so /usr/local/src/vk-fake-drm.c -ldl
   gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
   gcc -O2 -Wall -o /usr/local/sbin/reach-guard.new /usr/local/src/reach-guard.c && mv -f /usr/local/sbin/reach-guard.new /usr/local/sbin/reach-guard
