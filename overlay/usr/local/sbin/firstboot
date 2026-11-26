@@ -40,6 +40,13 @@ if [ ! -b "$data" ]; then
   fi
 fi
 
-ssh-keygen -A
+# host keys live on the data partition too, so an OS update does not change the device's SSH identity
+hk=/home/.sxx/ssh-host-keys
+if ls $hk/ssh_host_* >/dev/null 2>&1; then
+  cp -a $hk/ssh_host_* /etc/ssh/
+else
+  ssh-keygen -A
+  mkdir -p $hk && chmod 700 /home/.sxx $hk && cp -a /etc/ssh/ssh_host_* $hk/
+fi
 mkdir -p /var/log/journal && systemd-tmpfiles --create --prefix /var/log/journal
 touch /var/lib/firstboot.done
