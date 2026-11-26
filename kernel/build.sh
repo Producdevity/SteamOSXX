@@ -103,7 +103,8 @@ step "rocknix-joypad (out of tree)"
 curl -fL -o "$WORK/joypad.tar.gz" "$JOYPAD_REPO/archive/$JOYPAD_COMMIT.tar.gz"
 echo "$JOYPAD_SHA256  $WORK/joypad.tar.gz" | sha256sum -c -
 rm -rf "$WORK/joypad" && mkdir "$WORK/joypad" && tar -xzf "$WORK/joypad.tar.gz" -C "$WORK/joypad" --strip-components=1
-make "${MAKE_ARGS[@]}" -C "$WORK/linux" M="$WORK/joypad" modules >/dev/null
+# its Makefile picks the driver by DEVICE: H700 is the single-ADC one this handheld uses
+make "${MAKE_ARGS[@]}" -C "$WORK/linux" M="$WORK/joypad" DEVICE=H700 modules >/dev/null
 mkdir -p "$OUT/modules/lib/modules/$KREL/rocknix-joypad"
 find "$WORK/joypad" -name '*.ko' -exec cp {} "$OUT/modules/lib/modules/$KREL/rocknix-joypad/" \;
 depmod -b "$OUT/modules" "$KREL" 2>/dev/null || true
