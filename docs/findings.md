@@ -399,7 +399,16 @@ on another computer, so game runs need the account free.
   stayed idle, niced at low CPU weight) keeps zstd's ratio with lzo-rle's stalls: -45 % stall time and -47 % kswapd CPU
   on the real game for the same start time. The service itself used ~4 % of one core on average during heavy swapping.
   Now the default (`zram-generator.conf`: `compression-algorithm = lzo-rle zstd`).
-- Not yet tried: DAMON_RECLAIM, zram writeback to the SD card, tuning the recompress interval and threshold.
+- DAMON_RECLAIM (2026-11-26; kernel now has DAMON and `ZRAM_TRACK_ENTRY_ACTIME`; `sxx-damon-reclaim` sets cold pages at
+  30 s, 16 MB/s, watermarks widened because the defaults switch it off below 20 % free memory, which is always on 1 GB).
+  Synthetic benchmark, same boot procedure, memory stall (PSI some) in ms: baseline `lzo-rle zstd` 1404, 1417 (and 1062
+  in a run where DAMON failed to enable); DAMON on 1188 and 3238, with workload rate -3 % and -11 % in the two runs and
+  kswapd CPU 4.1 and 8.5 s against 3.5-4.6. Run-to-run noise is about 30 %, and the one clearly different result is worse,
+  so there is no evidence DAMON helps: proactively paging out cold memory just adds compression work that competes with
+  the game. Left off (the service is there to enable by hand).
+- zram writeback to the SD card is not worth testing on this hardware: the card is also the root and Steam's disk, reads
+  at about 12 MB/s cold and wears with writes.
+- Not yet tried: tuning the recompress interval and threshold (`idle <seconds>` now works with access-time tracking).
 
 ### Where a game launch spends its time (2026-11-26, Geometry Wars, ~55-65 s)
 - Per-process CPU deltas (not `ps`, which averages over a process's life): `steamwebhelper` uses 7-17 CPU-seconds per

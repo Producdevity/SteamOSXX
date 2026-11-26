@@ -45,9 +45,9 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] Sleep is refused (`AllowSuspend=no`), so the power menu's Sleep does nothing harmful.
 - [x] Release notes and releases: v0.1.0, v0.2.0, v0.2.1 published (docs/release-notes/).
 
-- [ ] Compressed-memory experiments (docs/findings.md, CRAM section): lz4 vs zstd, zram multi-comp recompression of
-      idle pages, DAMON_RECLAIM, zram writeback with a write limit. Needs `ZRAM_TRACK_ENTRY_ACTIME` and DAMON in
-      `kernel/build.sh`. CRAM itself needs hardware this board does not have. M
+- [x] Compressed-memory experiments (2026-11-26): lz4 and zstd vs lzo-rle, idle recompression (shipped), DAMON_RECLAIM
+      (no gain, left off), zram writeback (not worth it on an SD card). Left: tuning the recompress interval. CRAM needs
+      hardware this board does not have.
 
 ## Ideas from nibOS (reviewed 2026-11-26)
 [nibOS](https://github.com/abradburne/nibos) targets the Anbernic RG DS+ (RK3568), runs Arch Linux ARM with native

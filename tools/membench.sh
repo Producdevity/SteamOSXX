@@ -11,8 +11,10 @@ SECS=${SECS:-200}; SETTLE=${SETTLE:-90}
 for algo in "$@"; do
   echo "== $(date +%T) $algo: configuring"
   # "a+b" = primary a with b as the secondary for idle-page recompression (sxx-zram-recompress)
-  conf=${algo//+/ }; svc=disable; case "$algo" in *+*) svc=enable;; esac
-  adb -s $OS shell "sed -i 's/^compression-algorithm = .*/compression-algorithm = $conf/' /etc/systemd/zram-generator.conf; systemctl $svc sxx-zram-recompress.service >/dev/null 2>&1; grep compression /etc/systemd/zram-generator.conf; sync; (systemctl reboot >/dev/null 2>&1 &)"
+  # "+damon" also turns on proactive reclaim of cold memory (sxx-damon-reclaim)
+  dsvc=disable; case "$algo" in *+damon*) dsvc=enable; algo_c=${algo//+damon/};; *) algo_c=$algo;; esac
+  conf=${algo_c//+/ }; svc=disable; case "$algo_c" in *+*) svc=enable;; esac
+  adb -s $OS shell "sed -i 's/^compression-algorithm = .*/compression-algorithm = $conf/' /etc/systemd/zram-generator.conf; systemctl $svc sxx-zram-recompress.service >/dev/null 2>&1; systemctl $dsvc sxx-damon-reclaim.service >/dev/null 2>&1; grep compression /etc/systemd/zram-generator.conf; sync; (systemctl reboot >/dev/null 2>&1 &)"
   until adb -s $MUOS get-state 2>/dev/null | grep -q device; do sleep 5; done
   sleep 15
   tools/fel-boot.sh > out/membench-fel.log 2>&1 || { echo "fel-boot failed for $algo"; continue; }
