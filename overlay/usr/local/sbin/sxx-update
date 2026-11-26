@@ -82,13 +82,12 @@ apply() {
   say "$tag staged; it installs at the next boot (about 3 minutes, do not power off)"
 }
 
-# Steam gives steamos-update about five minutes and then kills it, which a 340 MB download over this Wi-Fi can exceed:
-# the work runs as its own unit, and Steam's call waits for it (press Apply again to keep waiting).
+# Steam kills a steamos-update check after about five minutes, and a 340 MB download over this Wi-Fi can take longer: the
+# work runs as its own unit, so it survives that, and Steam's apply call waits for it (it showed "Applying" throughout).
 apply_detached() {
   local unit=sxx-update-run i
   systemctl is-active --quiet $unit || systemd-run -q --unit=$unit --collect --nice=15 -p IOSchedulingClass=idle -p CPUWeight=20 /usr/local/sbin/sxx-update apply
-  for i in $(seq 1 56); do systemctl is-active --quiet $unit || break; sleep 5; done
-  if systemctl is-active --quiet $unit; then say "still downloading in the background; press Apply again to keep waiting"; return 1; fi
+  for i in $(seq 1 1440); do systemctl is-active --quiet $unit || break; sleep 5; done
   [ -f "$STATE/pending" ] && return 0
   check >/dev/null || return 7
   return 1
