@@ -83,8 +83,10 @@ scripts/config --set-str CONFIG_DEFAULT_HOSTNAME rg40xx
 scripts/config --set-str CONFIG_LOCALVERSION "-sxx"
 # the additions this directory exists for
 scripts/config -e CONFIG_HIDRAW -m CONFIG_UHID -m CONFIG_HID_STEAM -m CONFIG_USBIP_CORE -m CONFIG_USBIP_VHCI_HCD
+# memory experiments: DAMON-driven reclaim, and access-time tracking for zram's idle recompression and writeback
+scripts/config -e CONFIG_ZRAM_TRACK_ENTRY_ACTIME -e CONFIG_DAMON -e CONFIG_DAMON_VADDR -e CONFIG_DAMON_PADDR -e CONFIG_DAMON_SYSFS -e CONFIG_DAMON_RECLAIM -e CONFIG_DAMON_LRU_SORT
 make "${MAKE_ARGS[@]}" olddefconfig </dev/null >/dev/null
-for opt in HIDRAW UHID HID_STEAM USBIP_CORE USBIP_VHCI_HCD; do grep -E "^CONFIG_$opt=" .config || { echo "CONFIG_$opt did not stick"; exit 1; }; done
+for opt in HIDRAW UHID HID_STEAM USBIP_CORE USBIP_VHCI_HCD ZRAM_TRACK_ENTRY_ACTIME DAMON DAMON_RECLAIM; do grep -E "^CONFIG_$opt=" .config || { echo "CONFIG_$opt did not stick"; exit 1; }; done
 cp .config "$OUT/config"
 
 step "build (-j$JOBS)"
