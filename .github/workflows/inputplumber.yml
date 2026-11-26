@@ -1,0 +1,32 @@
+name: inputplumber
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/inputplumber.yml']
+concurrency:
+  group: inputplumber-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  # InputPlumber (GPL-3.0-or-later) turns evdev gamepads into virtual HID devices, including the Steam Deck's.
+  INPUTPLUMBER_TAG: v0.85.0
+
+jobs:
+  inputplumber:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential pkg-config libudev-dev libevdev-dev libiio-dev libclang-dev clang curl git
+      - run: git clone --depth 1 --branch "$INPUTPLUMBER_TAG" https://github.com/ShadowBlip/InputPlumber.git ip
+      - run: curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - run: |
+          . "$HOME/.cargo/env"
+          cd ip
+          make build ENABLE_METRICS=0
+          make install ENABLE_METRICS=0 PREFIX="$GITHUB_WORKSPACE/out/inputplumber/usr"
+      - run: tar -C out/inputplumber -cf - . | xz -T0 -6 > out/inputplumber.tar.xz && ls -la out/inputplumber.tar.xz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inputplumber
+          path: out/inputplumber.tar.xz
+          retention-days: 14
+          compression-level: 0
