@@ -100,7 +100,8 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
       (Switchdeck's `SD_GAMEMODE`). Measure free RAM in game before/after. M
 - [ ] Steam in-game overlay back in the container: LSE-Emu must initialise before the overlay there too
       (container-side wrapper or LD_AUDIT-based early handler). M
-- [ ] Controller inside games (Steam Input virtual pad through the container); Steam button / QAM in game. S
+- [x] Controller inside games: verified 2026-11-26 on Geometry Wars (pad presses skip the logo and move the menu highlight
+      through the container); Steam button menu in game already worked. A game with analog sticks is still worth a look. S
 - [ ] A small compatibility list: which titles run, at what FPS (`docs/games.md`). ongoing
 
 ## 3. SteamOS session parity
