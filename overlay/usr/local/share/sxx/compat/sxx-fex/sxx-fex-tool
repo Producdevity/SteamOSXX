@@ -1,5 +1,7 @@
 #!/bin/sh
 # Steam compatibility tool entry point: sxx-fex-tool <verb> -- <game command...>
+# The game's output goes to ~/.local/share/sxx-fex/last.log (Steam keeps none for native games).
 shift
 [ "$1" = "--" ] && shift
-exec /usr/local/bin/sxx-fex run -- "$@"
+mkdir -p "$HOME/.local/share/sxx-fex"
+exec /usr/local/bin/sxx-fex run -- "$@" > "$HOME/.local/share/sxx-fex/last.log" 2>&1

@@ -63,6 +63,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends libevdev2 libii
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Bluetooth (the RTL8821CS controller shows up as hci0): bluez, and PipeWire's Bluetooth audio for headphones.
-RUN apt-get update && apt-get install -y --no-install-recommends bluez libspa-0.2-bluetooth \
+RUN apt-get update && apt-get install -y --no-install-recommends bluez libspa-0.2-bluetooth libxres-dev \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 

@@ -6,6 +6,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/XRes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,6 +80,18 @@ static unsigned long appid_from_pid(unsigned long pid) {
   return 0;
 }
 
+// Windows that never set _NET_WM_PID (SDL 1.2 games, such as the Linux x86 ones run under FEX): the X server knows which
+// process owns the connection (XRes), and that process sits under the same `reaper SteamLaunch` as the game.
+static unsigned long client_pid(Window w) {
+  XResClientIdSpec spec = {.client = w, .mask = XRES_CLIENT_ID_PID_MASK};
+  XResClientIdValue *ids = NULL; long n = 0; unsigned long pid = 0;
+  if (XResQueryClientIds(d, 1, &spec, &n, &ids) != Success) return 0;
+  for (long i = 0; i < n; i++)
+    if (XResGetClientIdType(&ids[i]) == XRES_CLIENT_ID_PID) pid = (unsigned long)XResGetClientPid(&ids[i]);
+  XResClientIdsDestroy(n, ids);
+  return pid;
+}
+
 static struct { Window w; unsigned long pid, appid; } cache[MAXW];
 static int ncache;
 
@@ -132,6 +145,7 @@ static void sync_focus(void) {
       continue;
     }
     unsigned long pid = get_cardinal(w, a_pid, 0);
+    if (!pid) pid = client_pid(w);
     unsigned long id = window_appid(w, pid);
     if (!id) continue;
     wins[nw++] = (struct win){w, id, pid};

@@ -8,7 +8,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY rootfs/src/padmap.c /usr/local/src/padmap.c
 RUN gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
 COPY rootfs/src/sxx-focus.c /usr/local/src/sxx-focus.c
-RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+RUN gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11 -lXRes
 COPY rootfs/src/memload.c /usr/local/src/memload.c
 RUN gcc -O2 -Wall -o /usr/local/bin/memload /usr/local/src/memload.c
 COPY rootfs/src/vk-fake-drm.c /usr/local/src/vk-fake-drm.c

@@ -56,7 +56,7 @@ dev "set -e
   gcc -O2 -Wall -o /usr/local/bin/padmap /usr/local/src/padmap.c
   gcc -O2 -Wall -o /usr/local/bin/memload /usr/local/src/memload.c
   mkdir -p /usr/local/lib/sxx && gcc -O2 -Wall -shared -fPIC -o /usr/local/lib/sxx/vk-fake-drm.so /usr/local/src/vk-fake-drm.c -ldl
-  gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11
+  gcc -O2 -Wall -o /usr/local/bin/sxx-focus /usr/local/src/sxx-focus.c -lX11 -lXRes
   gcc -O2 -Wall -o /usr/local/sbin/reach-guard.new /usr/local/src/reach-guard.c && mv -f /usr/local/sbin/reach-guard.new /usr/local/sbin/reach-guard
   chmod +x /usr/local/bin/* /usr/local/sbin/*
   chmod 600 /etc/NetworkManager/system-connections/* 2>/dev/null || true

@@ -20,8 +20,12 @@ STEAM = os.path.join(HOME, ".local", "share", "Steam")
 COMMON = os.path.join(STEAM, "steamapps", "common")
 FEX_DIR = os.path.join(COMMON, "FEX-Emu")
 STATE = os.path.join(HOME, ".local", "share", "sxx-fex")
-RUNTIMES = (("SteamLinuxRuntime_4", "steamrt4_platform_"), ("SteamLinuxRuntime_sniper", "sniper_platform_"),
-            ("SteamLinuxRuntime_soldier", "soldier_platform_"))
+# (folder, platform name prefix) in order of preference: FEX's guest thunks need a recent libstdc++, which Steam Linux
+# Runtime 4.0 has; the client's own runtime (no download) is the fallback
+RUNTIMES = ((os.path.join(COMMON, "SteamLinuxRuntime_4"), "steamrt4_platform_"),
+            (os.path.join(COMMON, "SteamLinuxRuntime_sniper"), "sniper_platform_"),
+            (os.path.join(COMMON, "SteamLinuxRuntime_soldier"), "soldier_platform_"),
+            (os.path.join(STEAM, "steamrt64", "pv-runtime", "steam-runtime-steamrt"), "steamrt3c_platform_"))
 LAYOUT = 1
 THUNKS = {"GL": 1, "drm": 1, "asound": 1}
 ESCAPE = re.compile(rb"\\([0-7]{3})")
@@ -50,9 +54,8 @@ def write_if_changed(path, data):
 
 
 def platform_dir():
-    """The newest installed x86 Steam Linux Runtime platform (a folder with files/ and usr-mtree.txt.gz)."""
-    for tool, prefix in RUNTIMES:
-        base = os.path.join(COMMON, tool)
+    """The first installed x86 Steam Linux Runtime platform (a folder with files/ and usr-mtree.txt.gz)."""
+    for base, prefix in RUNTIMES:
         try:
             entries = os.listdir(base)
         except OSError:
@@ -121,6 +124,39 @@ def materialize(platform):
     write_if_changed(marker, stamp)
 
 
+SCOUT = os.path.join(COMMON, "SteamLinuxRuntime", "steam-runtime")
+SO_NAME = re.compile(r".*\.so(\.[0-9]+)*$")
+LEGACY = (("i386", "lib/i386-linux-gnu", (("i386", "usr/lib/i386-linux-gnu"), ("i386", "lib/i386-linux-gnu"))),
+          ("x86_64", "lib/x86_64-linux-gnu", (("amd64", "usr/lib/x86_64-linux-gnu"), ("amd64", "lib/x86_64-linux-gnu"))))
+
+
+def legacy_libraries(rootfs):
+    """Games built for the old Steam Runtime ("scout") ask for libraries newer runtimes dropped (libvorbisfile.so.3, libCg
+    dependencies, ...). Steam installs scout as Steam Linux Runtime 1.0; this links just the libraries the guest root does not
+    already have into one folder per architecture, so they fill gaps and never replace a newer one."""
+    paths = []
+    for arch, rootlib, sources in LEGACY:
+        out = os.path.join(STATE, "legacy", arch)
+        stamp = "%d %s %s\n" % (LAYOUT, rootfs, SCOUT)
+        if read_text(os.path.join(out, ".stamp")) != stamp:
+            os.makedirs(out, exist_ok=True)
+            for entry in os.listdir(out):
+                os.unlink(os.path.join(out, entry))
+            for sub, directory in sources:
+                folder = os.path.join(SCOUT, sub, directory)
+                try:
+                    names = sorted(os.listdir(folder))
+                except OSError:
+                    continue
+                for name in names:
+                    wanted = SO_NAME.match(name) and not os.path.lexists(os.path.join(out, name))
+                    if wanted and not os.path.exists(os.path.join(rootfs, rootlib, name)):
+                        os.symlink(os.path.join(folder, name), os.path.join(out, name))
+            write_if_changed(os.path.join(out, ".stamp"), stamp)
+        paths.append(out)
+    return paths
+
+
 def elf_arch(path):
     try:
         with open(path, "rb") as f:
@@ -169,7 +205,7 @@ def guest_environment(fex, env):
     env["FEX_THUNKHOSTLIBS"] = fex["host_thunks"]
     env["FEX_THUNKGUESTLIBS"] = fex["guest_thunks"]
     env["FEX_THUNKCONFIG"] = os.path.join(STATE, "ThunksConfig.json")
-    env.setdefault("FEX_SILENTLOG", "0")
+    env.setdefault("FEX_SILENTLOG", "1")
     env.setdefault("FEX_OUTPUTLOG", "stderr")
     # the arm64 client's runtime and overlay are not for an x86 guest
     env.pop("GLIBC_TUNABLES", None)
@@ -180,6 +216,8 @@ def guest_environment(fex, env):
             env[name] = ":".join(kept)
         else:
             env.pop(name, None)
+    legacy = legacy_libraries(fex["rootfs"])
+    env["LD_LIBRARY_PATH"] = ":".join([p for p in (env.get("LD_LIBRARY_PATH") or "").split(":") if p] + legacy)
     if "aarch64" in env.get("GCONV_PATH", "") or "arm64" in env.get("GCONV_PATH", ""):
         env.pop("GCONV_PATH")
     return env
