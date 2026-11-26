@@ -400,3 +400,13 @@ on another computer, so game runs need the account free.
   on the real game for the same start time. The service itself used ~4 % of one core on average during heavy swapping.
   Now the default (`zram-generator.conf`: `compression-algorithm = lzo-rle zstd`).
 - Not yet tried: DAMON_RECLAIM, zram writeback to the SD card, tuning the recompress interval and threshold.
+
+### Where a game launch spends its time (2026-11-26, Geometry Wars, ~55-65 s)
+- Per-process CPU deltas (not `ps`, which averages over a process's life): `steamwebhelper` uses 7-17 CPU-seconds per
+  10 s for the whole launch (the Big Picture UI animating), `steam` ~2, the game itself 3-4 once it runs. The machine is
+  not CPU-saturated (about 30 % of four cores mid-launch), and the Wine services (`plugplay`, `winedevice`) start 20-40 s
+  in, the game process at ~40 s, its window at ~55 s: mostly serial startup (pressure-vessel, Wine, FEX).
+- With a cold page cache a launch reads ~740 MB from the SD card at ~12 MB/s (disk busy almost throughout, tasks
+  stalled on I/O 15-23 % of the time); a warm launch is ~10 s faster. Raising the card's `read_ahead_kb` from 128 to 1024 did not help
+  (75 s vs 64 s). A faster card is the I/O lever. Untried: pausing or lowering the priority of the web helper during
+  launches, FEX code-cache settings, a smaller or pre-warmed Wine prefix.
