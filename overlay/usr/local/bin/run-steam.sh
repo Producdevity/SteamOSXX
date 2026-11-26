@@ -8,7 +8,12 @@ if [ ! -x "$root/steamrtarm64/steam" ] || [ ! -f "$root/compatibilitytools.d/$(.
   setup_ui_start "Setting up SteamOSXX"
   if [ ! -x "$root/steamrtarm64/steam" ]; then
     setup_ui 0 "Waiting for the internet connection..."
-    until curl -fsI --max-time 10 https://client-update.steamstatic.com/ -o /dev/null || [ $? = 22 ]; do sleep 5; done
+    waited=0
+    until curl -fsI --max-time 10 https://client-update.steamstatic.com/ -o /dev/null || [ $? = 22 ]; do
+      waited=$((waited + 5))
+      [ "$waited" -lt 30 ] || setup_ui 0 "No internet yet. On a PC, copy wifi.txt.example to wifi.txt on the card's STEAMBOOT partition, fill in ssid= and psk=, and restart."
+      sleep 5
+    done
     setup_ui_run /usr/local/bin/steam-install.sh || { setup_ui_end; exit 1; }
   fi
   setup_ui_run /usr/local/bin/sxx-install-proton || echo "== proton-armv8 install failed" >>"$log"

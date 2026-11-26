@@ -27,8 +27,8 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 - [x] CI release image inspected (2026-11-25): 2.7 GiB, dev mode off, no NetworkManager profiles, no SSH keys, no Steam
       seed, `wifi.txt.example` on the boot partition, Wi-Fi import service enabled. adb over USB is a root shell
       (no auth) and SSH accepts only keys: say so in the notes.
-- [ ] Flash the CI-built release image (no SSH key, no Wi-Fi profile, no Steam seed) onto a card and run it from
-      power-on to a game without a PC: Wi-Fi from `wifi.txt`, first start, QR sign-in, install and launch a game.
+- [x] The CI-built release image ran from power-on to a game without a PC (2026-11-25): Wi-Fi from `wifi.txt`, first
+      start, QR sign-in, install and launch a game.
 - [x] First-start time measured on the release image (2026-11-25): power-on to the sign-in screen 58 min (Wi-Fi joined
       in 10 s; client download and install ~15 min; Proton download ~20 min at 0.3-0.4 MB/s from GitHub; Steam's own
       update and extraction the rest). Mirror or cache Proton if this matters.
@@ -37,14 +37,13 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
       ARMv8 Proton, Steam menu over the game and back, quit to Big Picture.
 - [x] The pad is a native Steam Deck controller (28de:1205 over USB/IP, InputPlumber; own kernel 7.2.0-sxx), verified
       2026-11-26: Deck glyphs, no "External Controller Translation" dialog, game test passes on the CI image.
-- [ ] `sxx-gametest` should dismiss Steam's hint dialogs. Rumble through InputPlumber is untested.
+- [x] `sxx-gametest` cancels an account-in-use dialog (and says so) and dismisses the controller hint. Rumble verified:
+      a Deck rumble report makes InputPlumber upload `FF_RUMBLE` to the pad (2026-11-26).
 - [x] Power menu: Restart verified on hardware (2026-11-26: `SteamClient.System.RestartPC()` reboots). Shut down uses
       the same sentinel path, and real poweroff was verified earlier. Sleep is refused (`AllowSuspend=no`) until TF-A
       suspend exists.
-- [ ] Wake/sleep is not supported: the power menu must not offer Suspend (or it must do nothing harmful).
-- [ ] Release notes: tested hardware, RAM-timing warning, known issues (slow, D3D10/11), what the setup window does,
-      licences (LSE-Emu GPL-3.0, ROCKNIX kernel GPL-2.0, Valve's Steam client and Proton are downloaded, not shipped).
-- [ ] Tag `v0.1.0`, let CI attach the image, write the notes, publish.
+- [x] Sleep is refused (`AllowSuspend=no`), so the power menu's Sleep does nothing harmful.
+- [x] Release notes and releases: v0.1.0, v0.2.0, v0.2.1 published (docs/release-notes/).
 
 - [ ] Compressed-memory experiments (docs/findings.md, CRAM section): lz4 vs zstd, zram multi-comp recompression of
       idle pages, DAMON_RECLAIM, zram writeback with a write limit. Needs `ZRAM_TRACK_ENTRY_ACTIME` and DAMON in
@@ -94,7 +93,7 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
       memory-locked `reach-guard` (plus a real sshd probe). Verify with a deliberate memory hog. S
 - [x] Game windows on top, Steam button menu over games and back: `GAMESCOPE_WAYLAND_DISPLAY` turns on
       Steam's gamescope logic, `sxx-focus` plays gamescope's side (base layer, overlay plane, focus). S
-- [ ] Faster Steam menu in game (10-20 s now: web helper comes back from zram). M
+- [x] Steam menu in game opens in ~6-9 s now (measured by `sxx-gametest` on the v0.2.1 image; was 10-20 s).
 - [ ] Game mode for 1 GB: suspend or unload steamwebhelper while a game runs, per-game zram/swap
       (Switchdeck's `SD_GAMEMODE`). Measure free RAM in game before/after. M
 - [ ] Steam in-game overlay back in the container: LSE-Emu must initialise before the overlay there too
@@ -105,8 +104,8 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
 ## 3. SteamOS session parity
 - [ ] steamos-manager (with Armada's patch notes: `CpuScaling1`, `LowPowerMode1`, `BatteryChargeLimit1`,
       brightness) so Steam's own settings (brightness, performance, power) work. M/L
-- [ ] InputPlumber (or HHD) for buttons/power key handling like SteamOS; replace `handheld-keys`. M
-- [ ] Power menu: Restart / Shut down from Steam through the sentinels (dev mode keeps poweroff = reboot). S
+- [x] InputPlumber is in (controller as a Steam Deck). `handheld-keys` (volume and brightness keys) still stands; replace it only if needed. S
+- [x] Power menu: Restart verified; Shut down uses the same path and real poweroff works (dev mode is off in releases).
 - [ ] First-boot experience: Steam's OOBE (Wi-Fi setup via NetworkManager, sign-in QR) on a fresh image. M
 - [ ] Boot splash (Plymouth, SteamOS-style) and boot-time budget. S
 - [ ] Steam UI speed: CEF on the GPU (`CEF_GPU=1`, Panfrost GLES) vs software; webhelper memory. M
