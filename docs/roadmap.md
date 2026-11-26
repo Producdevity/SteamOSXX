@@ -66,9 +66,12 @@ notes (docs/design/*.md, docs/boot-time.md) have ideas, ranked by value over eff
 - [x] Boot is already short (2026-11-26, `systemd-analyze`: 3.8 s kernel + 7.9 s userspace, Steam session at 7.4 s); the time to Steam's UI is Steam itself, so there is nothing
       worth trimming. Original idea, kept for reference: boot trimming from docs/boot-time.md that transfers to Debian: a systemd generator that reads the launcher's
       files ahead of time (at idle priority), masking unused generators. S
-- [ ] A/B root with automatic rollback and signed, chunked updates (minisign manifest, 16 MiB zstd chunks, `min_from`
-      and state `migrate` numbers). Start in userspace: extlinux or a boot script picks the slot, a tries counter in the
-      U-Boot environment, "mark good" after Steam's UI has been up 30 s. Skip their SPL patches (RK3568-specific). L
+- [x] In-place updater (2026-11-26, v0.4.0): `sxx-update` (check/apply, wired to Steam's Check For Updates through
+      `steamos-update`) stages the release's root and boot files on the data partition; the initramfs writes them at the next
+      boot (root first, boot files last through rename, `pending` marker makes an interrupted install repeat). Verified from
+      Steam's UI on hardware, twice. Still open: A/B root with automatic rollback and signed, chunked updates (minisign
+      manifest, 16 MiB zstd chunks, `min_from` and state `migrate` numbers): a bad release cannot be rolled back yet, and the
+      install is ten minutes of SD writes (reading to skip unchanged blocks is no faster on this card). L
 - [ ] Read-only root with a writable overlay on the state partition, which makes slot images reproducible. M
 - [ ] SPL Falcon boot (skip U-Boot proper) for boot time: needs an Allwinner port, boot time is not our main pain. L
 Not copied: Arch as the base, lz4-only zram (our lzo-rle plus idle zstd keeps the capacity), 3 GiB root slots (too big
