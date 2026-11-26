@@ -71,7 +71,10 @@ mcopy -s -i $work/boot.img $work/boot/* ::/
 
 echo "== root partition"
 used_mb=$(du -sm $work/root | cut -f1)
-root_mb=$(( used_mb * 115 / 100 + 768 ))
+# Fixed size: the data partition (/home, created on first boot) starts right after the root at the same offset in every
+# image, which is what lets a reflash find the previous one.
+root_mb=3072
+[ "$used_mb" -lt 2600 ] || { echo "root is ${used_mb} MB, too big for the fixed ${root_mb} MB root"; exit 1; }
 mke2fs -q -t ext4 -L steamroot -m 1 -E root_owner=0:0 -d $work/root $work/root.img ${root_mb}M
 
 echo "== disk image"

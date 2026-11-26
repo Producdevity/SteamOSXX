@@ -1,10 +1,45 @@
 #!/bin/sh
-# One-time setup on the device: grow the root partition to the card, new SSH host keys.
+# One-time setup on the device: the data partition for /home, new SSH host keys.
+#
+# The image holds boot (p1) and a fixed-size root (p2). Everything the user accumulates (Steam, Proton, games,
+# prefixes, the Steam login) lives in /home on a third partition, "sxxdata", that starts right after the root and runs
+# to the end of the card. Writing a new image to the card only rewrites p1 and p2, so the data is still there: when the
+# partition table has no p3 but an ext4 filesystem labelled sxxdata sits at that offset, the partition entry is put back
+# instead of formatting. A card without one gets a new data partition, seeded with the image's /home.
 set -x
 root=$(findmnt -no SOURCE /)
 disk=/dev/$(lsblk -no PKNAME "$root")
-part=$(cat /sys/class/block/${root##*/}/partition)
-growpart "$disk" "$part" && resize2fs "$root"
+rootpart=${root##*/}
+data=${disk}p3
+
+if [ ! -b "$data" ]; then
+  set -- $(sfdisk -d "$disk" | sed -n "s/.*${rootpart} : start= *\([0-9]*\), size= *\([0-9]*\).*/\1 \2/p")
+  start=$(( $1 + $2 ))
+  total=$(( $(blockdev --getsz "$disk") ))
+  if [ "$start" -gt 0 ] && [ $(( total - start )) -gt 2097152 ]; then
+    found=no
+    if blkid -p -O $(( start * 512 )) -o export "$disk" 2>/dev/null | grep -qx 'LABEL=sxxdata'; then
+      blkid -p -O $(( start * 512 )) -o export "$disk" | grep -qx 'TYPE=ext4' && found=yes
+    fi
+    echo "start=$start, type=83" | sfdisk --append --no-reread -q "$disk"
+    partx -u "$disk" 2>/dev/null || partprobe "$disk" 2>/dev/null
+    for i in 1 2 3 4 5 6 7 8 9 10; do [ -b "$data" ] && break; sleep 1; done
+    if [ -b "$data" ]; then
+      if [ "$found" = yes ]; then
+        # the old filesystem may be smaller than a bigger card's partition: grow it to fit
+        e2fsck -p -f "$data" ; resize2fs "$data" || true
+        echo "firstboot: reusing the existing data partition"
+      else
+        mkfs.ext4 -F -q -L sxxdata -m 1 "$data" && {
+          mkdir -p /mnt/sxxdata && mount "$data" /mnt/sxxdata && cp -a /home/. /mnt/sxxdata/ && umount /mnt/sxxdata
+        }
+        echo "firstboot: created a new data partition"
+      fi
+      mount /home || mount "$data" /home
+    fi
+  fi
+fi
+
 ssh-keygen -A
 mkdir -p /var/log/journal && systemd-tmpfiles --create --prefix /var/log/journal
 touch /var/lib/firstboot.done
