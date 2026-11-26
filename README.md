@@ -64,6 +64,14 @@ Tested on one RG40XX-H (LPDDR4). Other units may need different RAM timings (see
 If the card does not boot, U-Boot shows it to a connected PC as a USB drive so it can be rewritten. Hold the power
 button for 10-15 seconds to force an off.
 
+## Updating
+
+There is no in-place updater yet: write the new image to the same card, the same way. Your games, Proton, the Steam
+login and the Wi-Fi and SSH settings live on a separate data partition (`sxxdata`, mounted at `/home`) that starts right
+after the 3 GiB root, so a flash only rewrites the boot and root partitions. The first boot after a flash finds the data
+partition and reuses it. This holds for tools that write just the image (balenaEtcher, `dd`); a tool that erases the
+whole card, a smaller card, or a card from before this layout (v0.2.1 and earlier) starts fresh.
+
 ## Building
 
 Needs Docker (with arm64 emulation) and bash. Run from the repository root.
