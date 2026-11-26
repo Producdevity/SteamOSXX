@@ -61,3 +61,8 @@ RUN useradd -m -s /bin/bash -G sudo,video,input,audio,render,netdev steam \
 # InputPlumber (built by CI, see the image layer) links these; acl lets it hide the raw pad from other readers.
 RUN apt-get update && apt-get install -y --no-install-recommends libevdev2 libiio0 acl \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Bluetooth (the RTL8821CS controller shows up as hci0): bluez, and PipeWire's Bluetooth audio for headphones.
+RUN apt-get update && apt-get install -y --no-install-recommends bluez libspa-0.2-bluetooth \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
+
