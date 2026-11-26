@@ -66,11 +66,17 @@ button for 10-15 seconds to force an off.
 
 ## Updating
 
-There is no in-place updater yet: write the new image to the same card, the same way. Your games, Proton, the Steam
-login and the Wi-Fi and SSH settings live on a separate data partition (`sxxdata`, mounted at `/home`) that starts right
-after the 3 GiB root, so a flash only rewrites the boot and root partitions. The first boot after a flash finds the data
-partition and reuses it. This holds for tools that write just the image (balenaEtcher, `dd`); a tool that erases the
-whole card, a smaller card, or a card from before this layout (v0.2.1 and earlier) starts fresh.
+From the first release with an updater (the one after v0.3.0), update from Steam: **Settings > System > Check For Updates**.
+It downloads the newest release (about 340 MB), unpacks it to the data partition and installs it at the next restart,
+which takes about three minutes with a progress count on screen; do not power off. Your games, Proton, Steam login and the
+Wi-Fi and SSH settings stay (they live on the data partition, `sxxdata`, mounted at `/home`). From a shell: `sxx-update check`
+and `sxx-update apply`, then restart. A release that cannot be installed this way says so in its notes and needs a reflash.
+
+Reflashing works too: write the new image to the same card, the same way. The data partition starts right after the 3 GiB
+root, so a flash only rewrites the boot and root partitions and the first boot after it reuses the data partition. This holds
+for tools that write just the image (balenaEtcher, `dd`); a tool that erases the whole card, a smaller card, or a card from
+before this layout (v0.2.1 and earlier) starts fresh. The updater does not replace U-Boot; releases that change it need a
+reflash.
 
 ## Building
 

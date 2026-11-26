@@ -6,6 +6,7 @@
 # Staged on the data partition: root.img (the new root, 3 GiB) and boot/ (the new boot files). Nothing is written to the
 # running system; the boot-time step overwrites the root partition and the boot files, and /home is never touched.
 set -u
+[ -f /etc/sxx-update.env ] && . /etc/sxx-update.env   # SXX_UPDATE_REPO / SXX_UPDATE_API overrides, for testing
 REPO=${SXX_UPDATE_REPO:-xXJSONDeruloXx/SteamOSXX}
 API=${SXX_UPDATE_API:-https://api.github.com/repos/$REPO/releases/latest}
 STATE=/home/.sxx/update
@@ -52,13 +53,20 @@ apply() {
   want=$(curl -fsSL --max-time 30 "$shaurl" | awk '{print $1}')
   [ -n "$want" ] || { say "could not read the checksum"; return 1; }
   say "downloading $tag"
-  curl -fL --retry 8 --retry-delay 3 --retry-all-errors -C - -o "$STATE/img.xz.part" "$url" || { say "download failed (run again to resume)"; return 1; }
-  got=$(sha256sum "$STATE/img.xz.part" | awk '{print $1}')
-  [ "$got" = "$want" ] || { say "checksum mismatch, discarding the download"; rm -f "$STATE/img.xz.part"; return 1; }
+  part="$STATE/img-$tag.xz.part"
+  find "$STATE" -maxdepth 1 -name 'img-*.xz.part' ! -name "img-$tag.xz.part" -delete
+  curl -fsSL --retry 8 --retry-delay 3 --retry-all-errors -C - -o "$part" "$url"
+  case $? in
+    0) ;;
+    33) rm -f "$part"; curl -fsSL --retry 8 --retry-delay 3 --retry-all-errors -o "$part" "$url" || { say "download failed"; return 1; } ;;
+    *) say "download failed (run again to resume)"; return 1 ;;
+  esac
+  got=$(sha256sum "$part" | awk '{print $1}')
+  [ "$got" = "$want" ] || { say "checksum mismatch, discarding the download"; rm -f "$part"; return 1; }
   say "unpacking"
   rm -rf "$STATE/root.img" "$STATE/boot" "$STATE/boot.img"
   # layout contract (tools/build-image.sh): 16 MiB of MBR and U-Boot, a 256 MiB boot partition, then the 3 GiB root
-  xz -dc "$STATE/img.xz.part" | {
+  xz -dc "$part" | {
     dd of=/dev/null bs=1M count=16 iflag=fullblock status=none
     dd of="$STATE/boot.img" bs=1M count=256 iflag=fullblock status=none
     dd of="$STATE/root.img" bs=1M iflag=fullblock conv=sparse status=none
@@ -68,10 +76,22 @@ apply() {
   mount -o loop,ro "$STATE/boot.img" /run/sxx-update-boot && cp -a /run/sxx-update-boot/. "$STATE/boot/"
   umount /run/sxx-update-boot; rmdir /run/sxx-update-boot
   [ -f "$STATE/boot/KERNEL" ] && [ -f "$STATE/boot/initrd.cpio.gz" ] || { say "boot files missing from the image"; return 1; }
-  rm -f "$STATE/img.xz.part" "$STATE/boot.img"
+  rm -f "$part" "$STATE/boot.img"
   sync
   echo "$tag" > "$STATE/pending.tmp" && sync && mv "$STATE/pending.tmp" "$STATE/pending" && sync
   say "$tag staged; it installs at the next boot (about 3 minutes, do not power off)"
+}
+
+# Steam gives steamos-update about five minutes and then kills it, which a 340 MB download over this Wi-Fi can exceed:
+# the work runs as its own unit, and Steam's call waits for it (press Apply again to keep waiting).
+apply_detached() {
+  local unit=sxx-update-run i
+  systemctl is-active --quiet $unit || systemd-run -q --unit=$unit --collect --nice=15 -p IOSchedulingClass=idle -p CPUWeight=20 /usr/local/sbin/sxx-update apply
+  for i in $(seq 1 56); do systemctl is-active --quiet $unit || break; sleep 5; done
+  if systemctl is-active --quiet $unit; then say "still downloading in the background; press Apply again to keep waiting"; return 1; fi
+  [ -f "$STATE/pending" ] && return 0
+  check >/dev/null || return 7
+  return 1
 }
 
 case "${1:-}" in
@@ -80,10 +100,9 @@ case "${1:-}" in
   status) echo "version: $cur"; [ -f "$STATE/pending" ] && echo "staged: $(cat "$STATE/pending")" ;;
   steamos)
     shift
+    # Steam passes flags first (--enable-duplicate-detection check), so look for the verb anywhere
     for a in "$@"; do [ "$a" = --supports-duplicate-detection ] && exit 0; done
-    case "${1:-}" in
-      check) check ;;
-      *) apply ;;
-    esac ;;
+    for a in "$@"; do [ "$a" = check ] && { check; exit $?; }; done
+    apply_detached ;;
   *) echo "usage: sxx-update check|apply|status"; exit 2 ;;
 esac
