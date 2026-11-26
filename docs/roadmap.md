@@ -53,8 +53,10 @@ Status keys: [x] done, [~] partial, [ ] open. Effort/risk: S/M/L.
 [nibOS](https://github.com/abradburne/nibos) targets the Anbernic RG DS+ (RK3568), runs Arch Linux ARM with native
 emulators and has no Steam, Proton or FEX. Not a base for us (different distro and SoC, young project), but its design
 notes (docs/design/*.md, docs/boot-time.md) have ideas, ranked by value over effort:
-- [ ] State and data kept apart from the root: a persistent data partition for Steam, Proton, prefixes and saves, and a
-      small state partition for Wi-Fi and settings, so a reflash keeps everything (answers "users must reflash"). M
+- [x] State and data kept apart from the root (2026-11-26): `sxxdata` on a third partition after a fixed 3 GiB root,
+      mounted at /home; first boot creates it or finds and reuses it, and Wi-Fi/SSH settings are mirrored there, so a
+      reflash keeps games, Steam login, Proton and settings. Verified: flash, restore once, flash again, everything
+      survived. (Found and fixed on the way: the image must end exactly at the end of the root.)
 - [ ] Pre-seed or background-fetch Steam and Proton: ship them on the data partition or fetch them in a `Nice=19`,
       idle-I/O unit with chunked, hash-verified, resumable downloads (their updater pattern), removing the 1.1 GB
       first-start wait. M
