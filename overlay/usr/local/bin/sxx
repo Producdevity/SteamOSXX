@@ -228,6 +228,13 @@ def ip_press(button, ms):
     return True
 
 
+def ip_stick(side, x, y):
+    """A stick position through InputPlumber (an array of two doubles; other value types are silently ignored)."""
+    name = "LeftStick" if side.upper() == "L" else "RightStick"
+    r = subprocess.run(IP_CALL + ["Gamepad:Axis:" + name, "ad", "2", str(x), str(y)], capture_output=True)
+    return r.returncode == 0
+
+
 def pad(tokens):
     # Buttons go through InputPlumber when it runs (the real controller path); sticks, triggers and a missing
     # InputPlumber use the uinput test pad.
@@ -237,6 +244,11 @@ def pad(tokens):
         if parts[0] == "wait":
             time.sleep(int(parts[1]) / 1000)
             continue
+        if parts[0] == "stick" and len(parts) == 4 and shutil.which("busctl"):
+            if ip_stick(parts[1], parts[2], parts[3]):
+                time.sleep(0.2)
+                ip_stick(parts[1], 0, 0)
+                continue
         btn, ms = (parts[1], int(parts[2])) if parts[0] == "hold" else (parts[0], 80)
         if btn in IP_BUTTONS and shutil.which("busctl") and ip_press(btn, ms):
             continue

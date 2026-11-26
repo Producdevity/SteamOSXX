@@ -105,7 +105,8 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
 - [ ] Steam in-game overlay back in the container: LSE-Emu must initialise before the overlay there too
       (container-side wrapper or LD_AUDIT-based early handler). M
 - [x] Controller inside games: verified 2026-11-26 on Geometry Wars (pad presses skip the logo and move the menu highlight
-      through the container); Steam button menu in game already worked. A game with analog sticks is still worth a look. S
+      through the container); Steam button menu in game already worked. Analog sticks verified too (a held left stick flew the ship into the corner;
+      InputPlumber's `SendEvent` takes stick values only as `ad`, other types are silently ignored; `sxx pad stick:` uses it). S
 - [ ] A small compatibility list: which titles run, at what FPS (`docs/games.md`). ongoing
 
 ## 3. SteamOS session parity
