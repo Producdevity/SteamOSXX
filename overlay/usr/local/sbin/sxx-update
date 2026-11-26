@@ -29,6 +29,7 @@ PY
 
 newer() {
   [[ "$cur" =~ ^v[0-9]+\.[0-9]+ ]] || return 1
+  [ -f "$STATE/bad" ] && [ "$(cat "$STATE/bad")" = "$1" ] && return 1   # rolled back from it: not offered again
   [ "$cur" != "$1" ] && [ "$(printf '%s\n%s\n' "$cur" "$1" | sort -V | tail -1)" = "$1" ]
 }
 
@@ -93,7 +94,19 @@ apply_detached() {
   return 1
 }
 
+# Images kept for a rollback that are not what is running (the card was reflashed since) are dropped. Dev builds are never
+# reconciled.
+reconcile() {
+  if [[ "$cur" =~ ^v[0-9]+\.[0-9]+ ]] && [ -f "$STATE/installed/tag" ] && [ "$(cat "$STATE/installed/tag")" != "$cur" ]; then
+    rm -rf "$STATE/installed" "$STATE/previous" "$STATE/bad" "$STATE/trial"
+  fi
+}
+# Called once Steam's UI has been up for a while: the release on trial is good, so the initramfs stops counting.
+good() { rm -f "$STATE/trial"; reconcile; }
+
 case "${1:-}" in
+  good) good ;;
+  reconcile) reconcile ;;
   check) check ;;
   apply) apply ;;
   status) echo "version: $cur"; [ -f "$STATE/pending" ] && echo "staged: $(cat "$STATE/pending")" ;;
