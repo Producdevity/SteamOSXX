@@ -160,8 +160,14 @@ def vpad_daemon():
         # struct uinput_abs_setup: code, then input_absinfo (value, min, max, fuzz, flat, resolution)
         fcntl.ioctl(fd, UI_ABS_SETUP, struct.pack("H2xiiiiii", code, 0, -32768, 32767, 16, 128, 0))
     name = b"SteamOSXX Test Pad"
+    ident = (0x03, 0x1209, 0x5a5a, 1)
+    if os.environ.get("VPAD_IDENTITY") == "h700":
+        # Stand in for the built-in pad (unload rocknix_singleadc_joypad first) so presses travel the real path:
+        # evdev -> InputPlumber -> virtual Steam Deck controller -> Steam.
+        name, ident = b"H700 Gamepad", (0x19, 0x484b, 0x14df, 0x100)
+        fcntl.ioctl(fd, 0x4008556c, b"rocknix-singleadc-joypad/input0")  # UI_SET_PHYS
     # struct uinput_setup: input_id (bus, vendor, product, version), name[80], ff_effects_max
-    fcntl.ioctl(fd, UI_DEV_SETUP, struct.pack("HHHH80sI", 0x03, 0x1209, 0x5a5a, 1, name, 0))
+    fcntl.ioctl(fd, UI_DEV_SETUP, struct.pack("HHHH80sI", *ident, name, 0))
     fcntl.ioctl(fd, UI_DEV_CREATE)
 
     def emit(typ, code, val):
