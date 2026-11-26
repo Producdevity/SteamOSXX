@@ -142,6 +142,14 @@ once Steam and Proton are on the card), the RK3568 SPL and watchdog specifics.
 
 ## 5. GPU / gamescope (long shot)
 - [x] PanVK on Bifrost v7 (Mesa 26.1, `panvk-run`): works for native Vulkan, Vulkan 1.0, cannot run DXVK or gamescope (no robustness2, geometry shaders). Revisit with Mesa 26.3 (Vulkan 1.3 on v7) once packaged. S
+- [ ] Hardware DXVK research plan (docs/research/panvk-vulkan-dxvk.md, from the owner's gist, 2026-11-26), in order:
+      (1) reproducible Mesa 26.3.1+ build in an isolated prefix (`VK_DRIVER_FILES`), record `vulkaninfo` and regress Xorg/Steam/WineD3D. M
+      (2) feature audit on the device (robustness2/nullDescriptor, transform feedback, descriptor indexing, geometry emulation),
+      then DXVK version audit: D3D9 first, 1.10.3 as a diagnostic, the DXVK inside our Proton, then D3D10/11. M
+      (3) read and selectively port ideas from JimVulkan/mali-panvk (Android kbase; reuse NIR lowering and feature code, keep
+      the Linux Panfrost kmod and WSI). L, high risk
+      (4) Gamescope audit as a separate track (null descriptors, modifiers, dma-buf sync, H700 scanout limits). L
+      (5) RK3326/RK3566 as the second hardware target for the shared Bifrost work (RK3566 has LSE atomics). M
 - [x] Real gamescope on llvmpipe (2026-11-25): runs with `rootfs/src/vk-fake-drm.c` (`NESTED_GAMESCOPE=1`), but ~90 % of a
       core, black panel and Steam SIGBUS inside it. TABLED: the Xorg + `sxx-focus` path costs ~0 %. Reopen if a GPU Vulkan
       path appears; the open questions are the black screen and the SIGBUS (docs/findings.md). L
